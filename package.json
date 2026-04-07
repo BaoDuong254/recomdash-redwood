@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prepare": "lefthook install",
-    "shad": "cd web && npx shadcn-ui@latest add"
+    "shad": "cd web && npx shadcn@latest add"
   },
   "devDependencies": {
     "@commitlint/cli": "20.4.3",
