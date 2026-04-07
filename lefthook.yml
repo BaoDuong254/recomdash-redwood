@@ -1,0 +1,25 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*'
+      run: npx prettier --write --ignore-unknown {staged_files}
+      stage_fixed: true
+
+    lint:
+      glob: '**/*.{js,ts,jsx,tsx}'
+      run: npx eslint --fix {staged_files}
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    commitlint:
+      run: npx commitlint --edit {1}
+
+post-commit:
+  commands:
+    success-message:
+      run: |
+        git update-index --again
+        echo "⬆️ Commit successfully made!"
+        echo "🚀 Don't forget to push your changes!"

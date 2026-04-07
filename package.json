@@ -6,9 +6,19 @@
       "web"
     ]
   },
+  "scripts": {
+    "prepare": "lefthook install",
+    "shad": "cd web && npx shadcn-ui@latest add"
+  },
   "devDependencies": {
+    "@commitlint/cli": "20.4.3",
+    "@commitlint/config-conventional": "20.4.3",
+    "@redwoodjs/auth-dbauth-setup": "8.9.0",
+    "@redwoodjs/cli-storybook-vite": "8.9.0",
     "@redwoodjs/core": "8.9.0",
-    "@redwoodjs/project-config": "8.9.0"
+    "@redwoodjs/project-config": "8.9.0",
+    "lefthook": "2.1.2",
+    "prettier-plugin-tailwindcss": "^0.5.12"
   },
   "eslintConfig": {
     "extends": "@redwoodjs/eslint-config",
