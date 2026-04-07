@@ -1,4 +1,4 @@
-# README
+# Realtime E-commerce Dashboard with RedwoodJS service
 
 Welcome to [RedwoodJS](https://redwoodjs.com)!
 
