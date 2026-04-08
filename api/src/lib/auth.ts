@@ -41,7 +41,7 @@ export const getCurrentUser = async (session: Decoded) => {
 
   // Expose `roles` (plural) so the web-side hasRole() and PrivateSet roles=
   // checks work. RedwoodJS auth reads currentUser.roles, not currentUser.role.
-  return user ? { ...user, roles: user.role } : null
+  return user ? { ...user, roles: user.role as string } : null
 }
 
 /**
@@ -72,7 +72,10 @@ export const hasRole = (roles: AllowedRoles): boolean => {
     return false
   }
 
-  const currentUserRoles = context.currentUser?.roles
+  const currentUserRoles = context.currentUser?.roles as
+    | string
+    | string[]
+    | undefined
 
   if (typeof roles === 'string') {
     if (typeof currentUserRoles === 'string') {
