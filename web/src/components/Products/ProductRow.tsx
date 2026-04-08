@@ -1,6 +1,5 @@
 import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react'
 
-import { Badge } from 'src/components/ui/badge'
 import { Button } from 'src/components/ui/button'
 import { Checkbox } from 'src/components/ui/checkbox'
 import {
@@ -10,6 +9,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from 'src/components/ui/dropdown-menu'
+import {
+  InventoryBadge,
+  ProductStatusBadge,
+} from 'src/components/ui/status-badge'
 import { TableCell, TableRow } from 'src/components/ui/table'
 import { cn } from 'src/lib/utils'
 
@@ -24,37 +27,6 @@ type ProductRowProps = {
   onView?: (product: Product) => void
 }
 
-const StatusBadge = ({ status }: { status: Product['status'] }) => {
-  const variants: Record<
-    Product['status'],
-    { label: string; className: string }
-  > = {
-    active: {
-      label: 'Active',
-      className:
-        'tw-bg-emerald-100 tw-text-emerald-700 hover:tw-bg-emerald-100 dark:tw-bg-emerald-900/30 dark:tw-text-emerald-400',
-    },
-    draft: {
-      label: 'Draft',
-      className:
-        'tw-bg-muted tw-text-muted-foreground hover:tw-bg-muted dark:tw-bg-muted dark:tw-text-muted-foreground',
-    },
-    archived: {
-      label: 'Archived',
-      className:
-        'tw-bg-red-100 tw-text-red-700 hover:tw-bg-red-100 dark:tw-bg-red-900/30 dark:tw-text-red-400',
-    },
-  }
-
-  const { label, className } = variants[status] ?? variants.draft
-
-  return (
-    <Badge variant="secondary" className={cn('tw-font-medium', className)}>
-      {label}
-    </Badge>
-  )
-}
-
 const InventoryCell = ({
   inventory,
   threshold,
@@ -64,24 +36,14 @@ const InventoryCell = ({
 }) => {
   const isOut = inventory === 0
   const isLow = !isOut && inventory <= threshold
+  const state = isOut ? 'outOfStock' : isLow ? 'lowStock' : 'inStock'
 
   return (
-    <div className="tw-flex tw-flex-col tw-gap-0.5">
-      <span
-        className={cn(
-          'tw-text-sm tw-font-medium',
-          isOut && 'tw-text-red-600 dark:tw-text-red-400',
-          isLow && 'tw-text-orange-600 dark:tw-text-orange-400',
-          !isOut && !isLow && 'tw-text-foreground'
-        )}
-      >
-        {isOut ? 'Out of stock' : `${inventory} in stock`}
+    <div className="tw-flex tw-flex-col tw-gap-1">
+      <span className="tw-text-sm tw-font-medium tw-text-foreground">
+        {isOut ? '0' : inventory} {isOut ? '' : 'in stock'}
       </span>
-      {isLow && (
-        <span className="tw-text-xs tw-font-medium tw-text-orange-500">
-          Low Stock
-        </span>
-      )}
+      <InventoryBadge state={state} compact />
     </div>
   )
 }
@@ -129,7 +91,7 @@ const ProductRow = ({
 
       {/* Status */}
       <TableCell>
-        <StatusBadge status={product.status} />
+        <ProductStatusBadge status={product.status} />
       </TableCell>
 
       {/* Inventory */}

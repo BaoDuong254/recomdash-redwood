@@ -18,6 +18,12 @@ enum UserRole {
   ADMIN
   USER
   SELLER
+  STAFF
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
 }
 
 enum OrderStatus {
@@ -37,7 +43,8 @@ model User {
   resetToken          String?
   resetTokenExpiresAt DateTime?
   avatarUrl String?
-  role      UserRole  @default(USER)
+  role      UserRole   @default(USER)
+  status    UserStatus @default(ACTIVE)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?

@@ -28,8 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'src/components/ui/select'
+import { ProductStatusBadge } from 'src/components/ui/status-badge'
 import { Textarea } from 'src/components/ui/textarea'
-import { cn } from 'src/lib/utils'
 
 import { CATEGORY_OPTIONS } from './mockData'
 import { productSchema, type ProductFormValues } from './productSchema'
@@ -206,18 +206,7 @@ const ProductForm = ({
             <ViewField label="Category" value={vals.category} />
             <ViewField
               label="Status"
-              value={
-                <span
-                  className={cn(
-                    'tw-inline-flex tw-items-center tw-rounded-full tw-px-2.5 tw-py-0.5 tw-text-xs tw-font-medium',
-                    vals.status === 'active'
-                      ? 'tw-bg-emerald-100 tw-text-emerald-700 dark:tw-bg-emerald-900/30 dark:tw-text-emerald-400'
-                      : 'tw-bg-muted tw-text-muted-foreground'
-                  )}
-                >
-                  {vals.status.charAt(0).toUpperCase() + vals.status.slice(1)}
-                </span>
-              }
+              value={<ProductStatusBadge status={vals.status} />}
             />
           </CardContent>
         </Card>
