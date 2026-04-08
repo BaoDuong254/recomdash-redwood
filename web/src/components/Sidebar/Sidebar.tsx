@@ -83,18 +83,18 @@ const Sidebar = () => {
           collapsed ? 'lg:tw-justify-center' : 'tw-justify-between'
         )}
       >
-        <div className="tw-flex tw-min-w-0 tw-items-center tw-gap-2">
-          <img
-            src="/favicon.png"
-            alt="ReComDash logo"
-            className="tw-h-7 tw-w-7 tw-shrink-0 tw-rounded-md"
-          />
-          {!collapsed && (
+        {!collapsed && (
+          <div className="tw-flex tw-min-w-0 tw-items-center tw-gap-2">
+            <img
+              src="/favicon.png"
+              alt="ReComDash logo"
+              className="tw-h-7 tw-w-7 tw-shrink-0 tw-rounded-md"
+            />
             <span className="tw-truncate tw-text-lg tw-font-bold tw-tracking-tight tw-text-foreground">
               ReComDash
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         <button
           onClick={closeMobile}
