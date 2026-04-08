@@ -2,10 +2,10 @@ import * as React from 'react'
 
 import { Metadata } from '@redwoodjs/web'
 
-import DashboardContent from 'src/components/dashboard/DashboardContent'
+import DashboardContent from 'src/components/Dashboard/DashboardContent'
 import DashboardHeader, {
   type TimeRange,
-} from 'src/components/dashboard/DashboardHeader'
+} from 'src/components/Dashboard/DashboardHeader'
 
 const DashboardPage = () => {
   const [timeRange, setTimeRange] = React.useState<TimeRange>('30d')

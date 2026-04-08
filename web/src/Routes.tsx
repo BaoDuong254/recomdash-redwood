@@ -24,6 +24,10 @@ const Routes = () => {
           <Set wrap={DashboardLayout}>
             <Route path="/" redirect="adminDashboard" />
             <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
+            <Route path="/admin/products" page={AdminProductsPage} name="adminProducts" />
+            <Route path="/admin/products/new" page={AdminNewProductPage} name="adminNewProduct" />
+            <Route path="/admin/products/{id}" page={AdminProductPage} name="adminProduct" />
+            <Route path="/admin/products/{id}/edit" page={AdminEditProductPage} name="adminEditProduct" />
           </Set>
         </PrivateSet>
       </PrivateSet>

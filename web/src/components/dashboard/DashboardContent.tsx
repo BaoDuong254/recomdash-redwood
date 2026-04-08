@@ -10,13 +10,13 @@ import {
 
 import MetricCard, {
   type MetricCardProps,
-} from 'src/components/dashboard/MetricCard'
+} from 'src/components/Dashboard/MetricCard'
 import OrderStatusChart, {
   type OrderStatusItem,
-} from 'src/components/dashboard/OrderStatusChart'
+} from 'src/components/Dashboard/OrderStatusChart'
 import SalesChart, {
   type SalesDataPoint,
-} from 'src/components/dashboard/SalesChart'
+} from 'src/components/Dashboard/SalesChart'
 
 import { TIME_RANGE_OPTIONS, type TimeRange } from './DashboardHeader'
 
