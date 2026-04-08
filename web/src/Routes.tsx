@@ -7,23 +7,24 @@
 // 'src/pages/HomePage/HomePage.js'         -> HomePage
 // 'src/pages/Admin/BooksPage/BooksPage.js' -> AdminBooksPage
 
-import { PrivateSet, Route, Router } from '@redwoodjs/router'
+import { PrivateSet, Route, Router, Set } from '@redwoodjs/router'
+
+import DashboardLayout from 'src/layouts/DashboardLayout/DashboardLayout'
 
 import { useAuth } from './auth'
 
 const Routes = () => {
   return (
     <Router useAuth={useAuth}>
-      {/* Public routes */}
       <Route path="/login" page={LoginPage} name="login" />
       <Route path="/unauthorized" page={UnauthorizedPage} name="unauthorized" />
 
-      {/* Authenticated users only — unauthenticated → /login */}
       <PrivateSet unauthenticated="login">
-        {/* Admin-only routes — authenticated but non-admin → /unauthorized */}
         <PrivateSet unauthenticated="unauthorized" roles="ADMIN">
-          <Route path="/" redirect="adminDashboard" />
-          <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
+          <Set wrap={DashboardLayout}>
+            <Route path="/" redirect="adminDashboard" />
+            <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
+          </Set>
         </PrivateSet>
       </PrivateSet>
 

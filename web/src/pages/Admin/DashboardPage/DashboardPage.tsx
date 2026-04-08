@@ -1,66 +1,68 @@
 import { Metadata } from '@redwoodjs/web'
 
-import { useAuth } from 'src/auth'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from 'src/components/ui/card'
-
 const DashboardPage = () => {
-  const { currentUser, logOut } = useAuth()
-  const currentUserEmail =
-    typeof currentUser?.email === 'string' ? currentUser.email : 'Unknown User'
-
   return (
     <>
       <Metadata
-        title="Admin Dashboard"
-        description="Admin dashboard for monitoring key metrics and managing the application."
+        title="Dashboard Overview"
+        description="Realtime ecommerce dashboard overview"
         robots="nofollow"
       >
         <meta httpEquiv="content-type" content="text/html; charset=UTF-8" />
       </Metadata>
-      <div className="tw-min-h-screen tw-bg-background tw-p-8">
-        <div className="tw-mx-auto tw-max-w-7xl">
-          <div className="tw-mb-8 tw-flex tw-items-center tw-justify-between">
-            <h1 className="tw-text-3xl tw-font-bold">Admin Dashboard</h1>
-            <button
-              onClick={logOut}
-              className="tw-text-sm tw-text-muted-foreground tw-underline-offset-4 hover:tw-underline"
-            >
-              Log out
-            </button>
-          </div>
-          <div className="tw-grid tw-gap-4 md:tw-grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Total Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="tw-text-4xl tw-font-bold">—</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Revenue</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="tw-text-4xl tw-font-bold">—</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Active Users</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="tw-text-4xl tw-font-bold">—</p>
-              </CardContent>
-            </Card>
-          </div>
-          <p className="tw-mt-8 tw-text-sm tw-text-muted-foreground">
-            Logged in as {currentUserEmail}
+
+      <div className="tw-space-y-6">
+        {/* Page heading */}
+        <div>
+          <h1 className="tw-text-2xl tw-font-bold tw-text-foreground">
+            Dashboard Overview
+          </h1>
+          <p className="tw-mt-1 tw-text-sm tw-text-muted-foreground">
+            Welcome back. Here&apos;s what&apos;s happening in your store today.
+          </p>
+        </div>
+
+        {/* KPI skeleton row */}
+        <div
+          className="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-4"
+          aria-busy="true"
+          aria-label="Loading key metrics"
+        >
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="tw-h-28 tw-animate-pulse tw-rounded-lg tw-bg-muted"
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+
+        {/* Chart skeleton row */}
+        <div className="tw-grid tw-gap-4 lg:tw-grid-cols-3">
+          <div
+            className="tw-h-72 tw-animate-pulse tw-rounded-lg tw-bg-muted lg:tw-col-span-2"
+            aria-hidden="true"
+          />
+          <div
+            className="tw-h-72 tw-animate-pulse tw-rounded-lg tw-bg-muted"
+            aria-hidden="true"
+          />
+        </div>
+
+        {/* Table skeleton */}
+        <div
+          className="tw-h-48 tw-animate-pulse tw-rounded-lg tw-bg-muted"
+          aria-hidden="true"
+        />
+
+        {/* Coming soon callout */}
+        <div className="tw-rounded-lg tw-border tw-border-border tw-bg-card tw-p-6 tw-text-center">
+          <p className="tw-text-sm tw-font-medium tw-text-foreground">
+            Real-time data coming soon
+          </p>
+          <p className="tw-mt-1 tw-text-xs tw-text-muted-foreground">
+            Charts and metrics will be populated once backend connections are
+            established.
           </p>
         </div>
       </div>
