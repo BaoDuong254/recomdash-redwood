@@ -34,10 +34,14 @@ export const getCurrentUser = async (session: Decoded) => {
     throw new Error('Invalid session')
   }
 
-  return await db.user.findUnique({
+  const user = await db.user.findUnique({
     where: { id: session.id },
     select: { id: true, email: true, role: true },
   })
+
+  // Expose `roles` (plural) so the web-side hasRole() and PrivateSet roles=
+  // checks work. RedwoodJS auth reads currentUser.roles, not currentUser.role.
+  return user ? { ...user, roles: user.role } : null
 }
 
 /**

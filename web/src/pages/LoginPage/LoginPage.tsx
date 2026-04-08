@@ -52,7 +52,7 @@ const GoogleIcon = () => (
 )
 
 const LoginPage = () => {
-  const { logIn, isAuthenticated } = useAuth()
+  const { logIn, isAuthenticated, currentUser } = useAuth()
   const emailRef = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -63,10 +63,13 @@ const LoginPage = () => {
   }, [])
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated || !currentUser) return
+    if ((currentUser as { roles?: string }).roles === 'ADMIN') {
       navigate(routes.adminDashboard())
+    } else {
+      navigate(routes.unauthorized())
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, currentUser])
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -93,8 +96,6 @@ const LoginPage = () => {
       setError(response.message)
     } else if (response.error) {
       setError(response.error)
-    } else {
-      navigate(routes.adminDashboard())
     }
   }
 
@@ -110,19 +111,14 @@ const LoginPage = () => {
 
       <div className="tw-flex tw-min-h-screen tw-items-center tw-justify-center tw-bg-muted/40 tw-px-4">
         <div className="tw-w-full tw-max-w-sm tw-space-y-6">
-          {/* Brand */}
-          <div className="tw-space-y-1 tw-text-center">
-            <h1 className="tw-text-2xl tw-font-bold tw-tracking-tight">
-              RecomDash
-            </h1>
-            <p className="tw-text-sm tw-text-muted-foreground">
-              E-commerce Analytics Platform
-            </p>
-          </div>
-
           <Card className="tw-shadow-sm">
             <CardHeader className="tw-pb-4">
               <CardTitle className="tw-text-center tw-text-xl">
+                <img
+                  src="/favicon.png"
+                  alt="App Logo"
+                  className="tw-mx-auto tw-mb-4 tw-h-10 tw-w-auto"
+                />
                 Welcome back
               </CardTitle>
               <CardDescription>

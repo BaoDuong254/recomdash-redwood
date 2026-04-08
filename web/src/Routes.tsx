@@ -14,15 +14,17 @@ import { useAuth } from './auth'
 const Routes = () => {
   return (
     <Router useAuth={useAuth}>
-      {/* Root path always resolves to the admin entry route */}
-      <Route path="/" redirect="adminDashboard" />
-
       {/* Public routes */}
       <Route path="/login" page={LoginPage} name="login" />
+      <Route path="/unauthorized" page={UnauthorizedPage} name="unauthorized" />
 
-      {/* Admin-only routes — redirect to /login if not authenticated */}
+      {/* Authenticated users only — unauthenticated → /login */}
       <PrivateSet unauthenticated="login">
-        <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
+        {/* Admin-only routes — authenticated but non-admin → /unauthorized */}
+        <PrivateSet unauthenticated="unauthorized" roles="ADMIN">
+          <Route path="/" redirect="adminDashboard" />
+          <Route path="/admin/dashboard" page={AdminDashboardPage} name="adminDashboard" />
+        </PrivateSet>
       </PrivateSet>
 
       <Route notfound page={NotFoundPage} />
