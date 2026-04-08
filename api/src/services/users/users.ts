@@ -2,6 +2,8 @@ import crypto from 'crypto'
 
 import type { Prisma, UserRole, UserStatus } from '@prisma/client'
 
+import { UserInputError } from '@redwoodjs/graphql-server'
+
 import { db } from 'src/lib/db'
 
 // ---------------------------------------------------------------------------
@@ -198,4 +200,88 @@ export const deleteUser = async ({ id }: { id: string }) => {
       createdAt: true,
     },
   })
+}
+
+// ---------------------------------------------------------------------------
+// Current user resolvers (account settings)
+// ---------------------------------------------------------------------------
+
+const CURRENT_USER_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  role: true,
+  status: true,
+  avatarUrl: true,
+  createdAt: true,
+} as const
+
+export const currentUser = async () => {
+  const id = context.currentUser?.id as string
+  return db.user.findUnique({ where: { id }, select: CURRENT_USER_SELECT })
+}
+
+type UpdateCurrentUserProfileInput = {
+  name?: string | null
+  email?: string | null
+  avatarUrl?: string | null
+}
+
+export const updateCurrentUserProfile = async ({
+  input,
+}: {
+  input: UpdateCurrentUserProfileInput
+}) => {
+  const id = context.currentUser?.id as string
+
+  if (input.email) {
+    const existing = await db.user.findFirst({
+      where: { email: input.email, NOT: { id } },
+    })
+    if (existing) {
+      throw new UserInputError('Email address is already in use.')
+    }
+  }
+
+  return db.user.update({
+    where: { id },
+    data: {
+      ...(input.name !== undefined ? { name: input.name } : {}),
+      ...(input.email !== undefined ? { email: input.email } : {}),
+      ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
+    },
+    select: CURRENT_USER_SELECT,
+  })
+}
+
+type ChangePasswordInput = {
+  currentPassword: string
+  newPassword: string
+}
+
+export const changePassword = async ({
+  input,
+}: {
+  input: ChangePasswordInput
+}) => {
+  const id = context.currentUser?.id as string
+
+  const record = await db.user.findUnique({
+    where: { id },
+    select: { hashedPassword: true, salt: true },
+  })
+  if (!record) throw new UserInputError('User not found.')
+
+  const [verifyHash] = hashPassword(input.currentPassword, record.salt)
+  if (verifyHash !== record.hashedPassword) {
+    throw new UserInputError('Current password is incorrect.')
+  }
+
+  const [newHashed, newSalt] = hashPassword(input.newPassword)
+  await db.user.update({
+    where: { id },
+    data: { hashedPassword: newHashed, salt: newSalt },
+  })
+
+  return true
 }

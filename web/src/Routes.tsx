@@ -31,6 +31,7 @@ const Routes = () => {
             <Route path="/admin/users" page={AdminUsersPage} name="adminUsers" />
             <Route path="/admin/users/new" page={AdminNewUserPage} name="adminNewUser" />
             <Route path="/admin/users/{id}/edit" page={AdminEditUserPage} name="adminEditUser" />
+            <Route path="/admin/settings" page={AdminSettingsPage} name="adminSettings" />
           </Set>
         </PrivateSet>
       </PrivateSet>
