@@ -6,6 +6,13 @@ import type {
 } from '@prisma/client'
 
 import { db } from 'src/lib/db'
+import {
+  CHANNEL_ORDER_CREATED,
+  CHANNEL_ORDER_DELETED,
+  CHANNEL_ORDER_UPDATED,
+  type OrderEventPayload,
+  publishOrderEvent,
+} from 'src/lib/publisher'
 
 // ---------------------------------------------------------------------------
 // Shared filter builder
@@ -69,6 +76,29 @@ function toOrderShape(
 const INCLUDE_FULL = {
   items: { include: { product: true } },
 } as const
+
+// ---------------------------------------------------------------------------
+// Event helper
+// ---------------------------------------------------------------------------
+
+function toEventPayload(
+  order: Prisma.OrderGetPayload<{
+    include: { items: { include: { product: true } } }
+  }>
+): OrderEventPayload {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    paymentStatus: order.paymentStatus,
+    fulfillmentStatus: order.fulfillmentStatus,
+    totalAmount: Number(order.totalAmount),
+    customerName: order.customerName ?? null,
+    customerEmail: order.customerEmail ?? null,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Query resolvers
@@ -194,6 +224,7 @@ export const createOrder = async ({ input }: { input: CreateOrderInput }) => {
     },
     include: INCLUDE_FULL,
   })
+  publishOrderEvent(CHANNEL_ORDER_CREATED, toEventPayload(record))
   return toOrderShape(record)
 }
 
@@ -227,6 +258,7 @@ export const updateOrder = async ({
     },
     include: INCLUDE_FULL,
   })
+  publishOrderEvent(CHANNEL_ORDER_UPDATED, toEventPayload(record))
   return toOrderShape(record)
 }
 
@@ -236,5 +268,6 @@ export const deleteOrder = async ({ id }: { id: string }) => {
     data: { deletedAt: new Date() },
     include: INCLUDE_FULL,
   })
+  publishOrderEvent(CHANNEL_ORDER_DELETED, toEventPayload(record))
   return toOrderShape(record)
 }

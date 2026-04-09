@@ -110,7 +110,7 @@ const response = await fetch(`${GO_SERVICE_URL}/api/analytics/realtime`, {
 const ws = new WebSocket(`${GO_SERVICE_WS_URL}/ws/orders`)
 ```
 
-Keep Go service base URLs in environment variables (`VITE_GO_SERVICE_URL`, `VITE_GO_SERVICE_WS_URL`). Create thin custom hooks (e.g., `useRealtimeOrders`) that encapsulate the transport details — components should not know whether data comes from GraphQL or the Go service.
+Keep Go service base URLs in environment variables (`REDWOOD_ENV_GO_SERVICE_URL`, `REDWOOD_ENV_GO_SERVICE_WS_URL`). Create thin custom hooks (e.g., `useRealtimeOrders`) that encapsulate the transport details — components should not know whether data comes from GraphQL or the Go service.
 
 ### UI Components
 

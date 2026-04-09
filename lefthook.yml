@@ -11,6 +11,25 @@ pre-commit:
       run: npx eslint --fix {staged_files}
       stage_fixed: true
 
+    tidy-check:
+      glob: '{go-realtime/**/*.go,go-realtime/go.mod,go-realtime/go.sum}'
+      root: 'go-realtime'
+      run: |
+        go mod tidy
+        git diff --exit-code -- go.mod go.sum
+
+    go-format:
+      glob: 'go-realtime/**/*.go'
+      root: 'go-realtime'
+      run: gofmt -w .
+      stage_fixed: true
+
+    go-lint:
+      glob: 'go-realtime/**/*.go'
+      root: 'go-realtime'
+      run: golangci-lint run ./...
+      stage_fixed: true
+
 commit-msg:
   commands:
     commitlint:

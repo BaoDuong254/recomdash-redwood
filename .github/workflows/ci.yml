@@ -53,3 +53,50 @@ jobs:
 
       - name: Build
         run: yarn rw build
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.22'
+          go-version-file: 'go-realtime/go.mod'
+          cache: true
+
+      - name: Verify Dependencies
+        run: go mod verify
+        working-directory: go-realtime
+
+      - name: Download dependencies
+        run: go mod download
+        working-directory: go-realtime
+
+      - name: Verify go.mod and go.sum are tidy
+        run: |
+          go mod tidy
+          git diff --exit-code -- go.mod go.sum
+        working-directory: go-realtime
+
+      - name: Check formatting
+        run: |
+          fmt_out=$(gofmt -l .)
+          if [ -n "$fmt_out" ]; then
+            echo "The following files are not formatted:"
+            echo "$fmt_out"
+            exit 1
+          fi
+        working-directory: go-realtime
+
+      - name: Run go vet
+        run: go vet ./...
+        working-directory: go-realtime
+
+      - name: Build
+        run: go build ./...
+        working-directory: go-realtime
+
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+        working-directory: go-realtime
+
+      - name: Run staticcheck
+        run: staticcheck ./...
+        working-directory: go-realtime

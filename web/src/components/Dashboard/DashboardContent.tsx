@@ -11,6 +11,7 @@ import OrderStatusChart, {
 import SalesChart, {
   type SalesDataPoint,
 } from 'src/components/Dashboard/SalesChart'
+import { useRealtimeDashboard } from 'src/hooks/useRealtimeDashboard'
 
 import { TIME_RANGE_OPTIONS, type TimeRange } from './DashboardHeader'
 
@@ -100,9 +101,25 @@ const DashboardContent = ({ timeRange }: DashboardContentProps) => {
     TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.trendLabel ??
     'vs last period'
 
-  const { data, loading } = useQuery(DASHBOARD_STATS_QUERY, {
+  const { data, loading, refetch } = useQuery(DASHBOARD_STATS_QUERY, {
     variables: { timeRange },
   })
+
+  // Connect to the Go WebSocket service.  Any order event (create / update /
+  // delete) sets a new `latestOrder` reference — we use that as a signal to
+  // refetch the GraphQL query so KPI cards, trend percentages, and charts all
+  // stay in sync with the current time-range selection.
+  const { latestOrder, connected } = useRealtimeDashboard()
+
+  React.useEffect(() => {
+    if (!latestOrder) return
+    // Debounce: if several events arrive in quick succession (e.g. order
+    // generator in fast mode), wait 400 ms and fire a single refetch.
+    const timer = setTimeout(() => {
+      refetch()
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [latestOrder, refetch])
 
   const stats = data?.dashboardStats
 
@@ -117,6 +134,24 @@ const DashboardContent = ({ timeRange }: DashboardContentProps) => {
 
   return (
     <div className="tw-space-y-6">
+      {/* ── Realtime connection indicator ─────────────────────────────────── */}
+      <div className="tw-flex tw-justify-end">
+        {connected ? (
+          <div className="tw-flex tw-items-center tw-gap-1.5 tw-text-xs tw-text-muted-foreground">
+            <span className="tw-relative tw-flex tw-h-2 tw-w-2">
+              <span className="tw-absolute tw-inline-flex tw-h-full tw-w-full tw-animate-ping tw-rounded-full tw-bg-green-400 tw-opacity-75" />
+              <span className="tw-relative tw-inline-flex tw-h-2 tw-w-2 tw-rounded-full tw-bg-green-500" />
+            </span>
+            Live
+          </div>
+        ) : (
+          <div className="tw-flex tw-items-center tw-gap-1.5 tw-text-xs tw-text-muted-foreground">
+            <span className="tw-inline-flex tw-h-2 tw-w-2 tw-rounded-full tw-bg-muted-foreground/40" />
+            Connecting…
+          </div>
+        )}
+      </div>
+
       {/* ── KPI cards ─────────────────────────────────────────────────────── */}
       <div className="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
         {loading || !metrics ? (
