@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
 
-import { Bell, Menu, Search } from 'lucide-react'
+import { Bell, Menu } from 'lucide-react'
 
+import GlobalSearch from 'src/components/GlobalSearch/GlobalSearch'
 import { ModeToggle } from 'src/components/ModeToggle/ModeToggle'
-import { Input } from 'src/components/ui/input'
 import { useSidebar } from 'src/layouts/DashboardLayout/DashboardLayout'
 import { cn } from 'src/lib/utils'
 
@@ -21,19 +21,8 @@ const Header = () => {
         <Menu className="tw-h-5 tw-w-5" />
       </button>
 
-      {/* Search */}
-      <div className="tw-relative tw-w-full tw-max-w-sm">
-        <Search
-          className="tw-pointer-events-none tw-absolute tw-left-3 tw-top-1/2 tw-h-4 tw-w-4 tw--translate-y-1/2 tw-text-muted-foreground"
-          aria-hidden="true"
-        />
-        <Input
-          type="search"
-          placeholder="Search products, orders…"
-          className="tw-h-9 tw-pl-9"
-          aria-label="Search"
-        />
-      </div>
+      {/* Global search */}
+      <GlobalSearch />
 
       {/* Right-side actions */}
       <div className="tw-ml-auto tw-flex tw-items-center tw-gap-2">
@@ -74,7 +63,6 @@ const NotificationsButton = () => {
         aria-controls="header-notifications-panel"
       >
         <Bell className="tw-h-5 tw-w-5" />
-        {/* Live activity indicator */}
         <span
           className="tw-absolute tw-right-1.5 tw-top-1.5 tw-flex tw-h-2 tw-w-2"
           aria-hidden="true"
