@@ -1,6 +1,5 @@
-import { useState } from 'react'
-
 import { navigate, routes } from '@redwoodjs/router'
+import { useMutation } from '@redwoodjs/web'
 import { Metadata } from '@redwoodjs/web'
 
 import ProductForm from 'src/components/Products/ProductForm'
@@ -8,32 +7,60 @@ import ProductPageHeader from 'src/components/Products/ProductPageHeader'
 import type { ProductFormValues } from 'src/components/Products/productSchema'
 import { useToast } from 'src/hooks/use-toast'
 
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
+const CREATE_PRODUCT_MUTATION = gql`
+  mutation CreateProductMutation($input: CreateProductInput!) {
+    createProduct(input: $input) {
+      id
+      name
+      sku
+    }
+  }
+`
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 const NewProductPage = () => {
-  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = async (data: ProductFormValues) => {
-    setLoading(true)
-    try {
-      // TODO: replace with GraphQL mutation
-      // await createProduct({ variables: { input: data } })
-      console.log('Creating product:', data)
-      await new Promise((r) => setTimeout(r, 800)) // simulate async
-
+  const [createProduct, { loading }] = useMutation(CREATE_PRODUCT_MUTATION, {
+    onCompleted: ({ createProduct: created }) => {
       toast({
         title: 'Product created',
-        description: `"${data.name}" has been added to your catalog.`,
+        description: `"${created.name}" has been added to your catalog.`,
       })
       navigate(routes.adminProducts())
-    } catch {
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to create product',
-        description: 'Something went wrong. Please try again.',
+        description: error.message,
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  const handleSubmit = async (data: ProductFormValues) => {
+    await createProduct({
+      variables: {
+        input: {
+          name: data.name,
+          sku: data.sku,
+          price: data.price,
+          inventory: data.inventory,
+          lowStockThreshold: data.lowStockThreshold,
+          status: data.status,
+          category: data.category,
+          image: data.image || null,
+          description: data.description || null,
+        },
+      },
+    })
   }
 
   return (

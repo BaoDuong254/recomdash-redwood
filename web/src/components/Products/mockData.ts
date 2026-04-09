@@ -1,103 +1,13 @@
-import type { Product } from './types'
-
-export const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name: 'Wireless Noise-Cancelling Headphones',
-    sku: 'WNC-H001',
-    image: 'https://placehold.co/40x40/6366f1/ffffff?text=WH',
-    status: 'active',
-    inventory: 145,
-    lowStockThreshold: 20,
-    price: 299.99,
-    category: 'Electronics',
-  },
-  {
-    id: '2',
-    name: 'Ergonomic Office Chair',
-    sku: 'ERG-C002',
-    image: 'https://placehold.co/40x40/8b5cf6/ffffff?text=EC',
-    status: 'active',
-    inventory: 32,
-    lowStockThreshold: 10,
-    price: 549.0,
-    category: 'Furniture',
-  },
-  {
-    id: '3',
-    name: 'Mechanical Keyboard Pro',
-    sku: 'MKP-K003',
-    image: 'https://placehold.co/40x40/ec4899/ffffff?text=MK',
-    status: 'active',
-    inventory: 8,
-    lowStockThreshold: 15,
-    price: 189.99,
-    category: 'Electronics',
-  },
-  {
-    id: '4',
-    name: 'Leather Messenger Bag',
-    sku: 'LMB-B004',
-    image: 'https://placehold.co/40x40/f59e0b/ffffff?text=LB',
-    status: 'draft',
-    inventory: 0,
-    lowStockThreshold: 5,
-    price: 129.99,
-    category: 'Accessories',
-  },
-  {
-    id: '5',
-    name: 'Standing Desk Converter',
-    sku: 'SDC-D005',
-    image: 'https://placehold.co/40x40/10b981/ffffff?text=SD',
-    status: 'active',
-    inventory: 63,
-    lowStockThreshold: 10,
-    price: 349.0,
-    category: 'Furniture',
-  },
-  {
-    id: '6',
-    name: '4K Ultra-Wide Monitor',
-    sku: 'UWM-M006',
-    image: 'https://placehold.co/40x40/3b82f6/ffffff?text=4K',
-    status: 'active',
-    inventory: 19,
-    lowStockThreshold: 20,
-    price: 899.0,
-    category: 'Electronics',
-  },
-  {
-    id: '7',
-    name: 'Bamboo Wireless Charger',
-    sku: 'BWC-C007',
-    image: 'https://placehold.co/40x40/84cc16/ffffff?text=BW',
-    status: 'draft',
-    inventory: 200,
-    lowStockThreshold: 30,
-    price: 49.99,
-    category: 'Electronics',
-  },
-  {
-    id: '8',
-    name: 'Minimalist Walnut Desk',
-    sku: 'MWD-D008',
-    image: 'https://placehold.co/40x40/d97706/ffffff?text=WD',
-    status: 'active',
-    inventory: 12,
-    lowStockThreshold: 5,
-    price: 799.0,
-    category: 'Furniture',
-  },
-]
-
+// Filter option lists — used by ProductFilters dropdowns
 export const CATEGORY_OPTIONS = [
   'All Categories',
   'Electronics',
   'Furniture',
   'Accessories',
 ]
+
 export const STATUS_OPTIONS = ['All Statuses', 'active', 'draft', 'archived']
+
 export const INVENTORY_OPTIONS = [
   'All Inventory',
   'In Stock',

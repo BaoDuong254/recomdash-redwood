@@ -26,6 +26,12 @@ enum UserStatus {
   INACTIVE
 }
 
+enum ProductStatus {
+  ACTIVE
+  DRAFT
+  ARCHIVED
+}
+
 enum OrderStatus {
   NEW
   PAID
@@ -63,13 +69,19 @@ model User {
 }
 
 model Product {
-  id        String    @id @default(cuid())
-  name      String
-  price     Decimal   @db.Decimal(10, 2)
-  stock     Int       @default(0)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id                String        @id @default(cuid())
+  name              String
+  sku               String        @unique
+  price             Decimal       @db.Decimal(10, 2)
+  stock             Int           @default(0)
+  lowStockThreshold Int           @default(10)
+  status            ProductStatus @default(DRAFT)
+  category          String
+  image             String?
+  description       String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
 
   orderItems OrderItem[]
 }

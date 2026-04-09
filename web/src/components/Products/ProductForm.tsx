@@ -32,6 +32,7 @@ import { ProductStatusBadge } from 'src/components/ui/status-badge'
 import { Textarea } from 'src/components/ui/textarea'
 
 import { CATEGORY_OPTIONS } from './mockData'
+import ProductImageUpload from './ProductImageUpload'
 import { productSchema, type ProductFormValues } from './productSchema'
 import type { Product } from './types'
 
@@ -153,9 +154,6 @@ const ProductForm = ({
     form.reset(toFormValues(defaultValues))
   }, [defaultValues?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const imageUrl = form.watch('image')
-  const productName = form.watch('name')
-
   const handleSubmit = form.handleSubmit(async (data) => {
     await onSubmit?.(data)
   })
@@ -224,29 +222,24 @@ const ProductForm = ({
             <CardTitle className="tw-text-base">Product Identity</CardTitle>
           </CardHeader>
           <CardContent className="tw-space-y-4">
-            {/* Image preview + URL */}
-            <div className="tw-flex tw-items-start tw-gap-4">
-              <ImagePreview url={imageUrl} name={productName} />
-              <FormField
-                control={form.control}
-                name="image"
-                render={({ field }) => (
-                  <FormItem className="tw-flex-1">
-                    <FormLabel>Image URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://example.com/product.jpg"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Paste a direct image URL for the product thumbnail
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            {/* Image upload */}
+            <FormField
+              control={form.control}
+              name="image"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Product Image</FormLabel>
+                  <FormControl>
+                    <ProductImageUpload
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={loading}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             {/* Name + SKU */}
             <div className="tw-grid tw-grid-cols-1 tw-gap-4 sm:tw-grid-cols-2">

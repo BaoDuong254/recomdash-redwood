@@ -1,75 +1,161 @@
 import { useState } from 'react'
 
 import { navigate, routes } from '@redwoodjs/router'
+import { useMutation, useQuery } from '@redwoodjs/web'
 import { Metadata } from '@redwoodjs/web'
 
 import DeleteProductDialog from 'src/components/Products/DeleteProductDialog'
-import { MOCK_PRODUCTS } from 'src/components/Products/mockData'
 import ProductForm from 'src/components/Products/ProductForm'
 import ProductPageHeader from 'src/components/Products/ProductPageHeader'
 import type { ProductFormValues } from 'src/components/Products/productSchema'
+import type { Product } from 'src/components/Products/types'
+import { Skeleton } from 'src/components/ui/skeleton'
 import { useToast } from 'src/hooks/use-toast'
+
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
+const PRODUCT_QUERY = gql`
+  query EditProductQuery($id: String!) {
+    product(id: $id) {
+      id
+      name
+      sku
+      price
+      inventory
+      lowStockThreshold
+      status
+      category
+      image
+      description
+    }
+  }
+`
+
+const UPDATE_PRODUCT_MUTATION = gql`
+  mutation UpdateProductMutation($id: String!, $input: UpdateProductInput!) {
+    updateProduct(id: $id, input: $input) {
+      id
+      name
+      sku
+    }
+  }
+`
+
+const DELETE_PRODUCT_MUTATION = gql`
+  mutation DeleteProductFromEditMutation($id: String!) {
+    deleteProduct(id: $id) {
+      id
+      name
+    }
+  }
+`
+
+// ---------------------------------------------------------------------------
+// Loading skeleton
+// ---------------------------------------------------------------------------
+
+const PageSkeleton = () => (
+  <div className="tw-mx-auto tw-max-w-3xl tw-space-y-6">
+    <div className="tw-flex tw-items-center tw-gap-3">
+      <Skeleton className="tw-h-9 tw-w-9 tw-rounded-md" />
+      <div className="tw-space-y-1.5">
+        <Skeleton className="tw-h-6 tw-w-40" />
+        <Skeleton className="tw-h-4 tw-w-24" />
+      </div>
+    </div>
+    <Skeleton className="tw-h-64 tw-rounded-lg" />
+    <Skeleton className="tw-h-32 tw-rounded-lg" />
+    <Skeleton className="tw-h-24 tw-rounded-lg" />
+  </div>
+)
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 type EditProductPageProps = {
   id: string
 }
 
 const EditProductPage = ({ id }: EditProductPageProps) => {
-  const [loading, setLoading] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState(false)
   const { toast } = useToast()
 
-  // TODO: replace with a RedwoodJS Cell / GraphQL query
-  const product = MOCK_PRODUCTS.find((p) => p.id === id)
-
-  const handleSubmit = async (data: ProductFormValues) => {
-    setLoading(true)
-    try {
-      // TODO: replace with GraphQL mutation
-      // await updateProduct({ variables: { id, input: data } })
-      console.log('Updating product:', id, data)
-      await new Promise((r) => setTimeout(r, 800))
-
+  const { data, loading: queryLoading } = useQuery(PRODUCT_QUERY, {
+    variables: { id },
+    onError: (error) => {
       toast({
-        title: 'Product updated',
-        description: `"${data.name}" has been saved successfully.`,
-      })
-      navigate(routes.adminProduct({ id }))
-    } catch {
-      toast({
-        title: 'Failed to update product',
-        description: 'Something went wrong. Please try again.',
+        title: 'Failed to load product',
+        description: error.message,
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
+    },
+  })
+
+  const [updateProduct, { loading: updateLoading }] = useMutation(
+    UPDATE_PRODUCT_MUTATION,
+    {
+      onCompleted: ({ updateProduct: updated }) => {
+        toast({
+          title: 'Product updated',
+          description: `"${updated.name}" has been saved successfully.`,
+        })
+        navigate(routes.adminProduct({ id }))
+      },
+      onError: (error) => {
+        toast({
+          title: 'Failed to update product',
+          description: error.message,
+          variant: 'destructive',
+        })
+      },
     }
+  )
+
+  const [deleteProduct, { loading: deleteLoading }] = useMutation(
+    DELETE_PRODUCT_MUTATION,
+    {
+      onCompleted: ({ deleteProduct: deleted }) => {
+        toast({
+          title: 'Product deleted',
+          description: `"${deleted.name}" has been removed from your catalog.`,
+        })
+        navigate(routes.adminProducts())
+      },
+      onError: (error) => {
+        toast({
+          title: 'Failed to delete product',
+          description: error.message,
+          variant: 'destructive',
+        })
+      },
+    }
+  )
+
+  const handleSubmit = async (formData: ProductFormValues) => {
+    await updateProduct({
+      variables: {
+        id,
+        input: {
+          name: formData.name,
+          sku: formData.sku,
+          price: formData.price,
+          inventory: formData.inventory,
+          lowStockThreshold: formData.lowStockThreshold,
+          status: formData.status,
+          category: formData.category,
+          image: formData.image || null,
+          description: formData.description || null,
+        },
+      },
+    })
   }
 
-  const handleDelete = async () => {
-    setDeleteLoading(true)
-    try {
-      // TODO: replace with GraphQL mutation
-      console.log('Deleting product:', id)
-      await new Promise((r) => setTimeout(r, 600))
+  if (queryLoading) return <PageSkeleton />
 
-      toast({
-        title: 'Product deleted',
-        description: `"${product?.name}" has been removed from your catalog.`,
-      })
-      setDeleteOpen(false)
-      navigate(routes.adminProducts())
-    } catch {
-      toast({
-        title: 'Failed to delete product',
-        description: 'Something went wrong. Please try again.',
-        variant: 'destructive',
-      })
-    } finally {
-      setDeleteLoading(false)
-    }
-  }
+  const product: Product | null = data?.product ?? null
 
   if (!product) {
     return (
@@ -102,7 +188,7 @@ const EditProductPage = ({ id }: EditProductPageProps) => {
           mode="edit"
           defaultValues={product}
           onSubmit={handleSubmit}
-          loading={loading}
+          loading={updateLoading}
         />
       </div>
 
@@ -110,7 +196,7 @@ const EditProductPage = ({ id }: EditProductPageProps) => {
         open={deleteOpen}
         productName={product.name}
         onOpenChange={setDeleteOpen}
-        onConfirm={handleDelete}
+        onConfirm={() => deleteProduct({ variables: { id } })}
         loading={deleteLoading}
       />
     </>
