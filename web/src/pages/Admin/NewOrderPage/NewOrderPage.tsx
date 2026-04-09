@@ -1,6 +1,5 @@
-import { useState } from 'react'
-
 import { navigate, routes } from '@redwoodjs/router'
+import { useMutation } from '@redwoodjs/web'
 import { Metadata } from '@redwoodjs/web'
 
 import OrderForm from 'src/components/Orders/OrderForm'
@@ -8,34 +7,69 @@ import OrderPageHeader from 'src/components/Orders/OrderPageHeader'
 import type { OrderFormValues } from 'src/components/Orders/orderSchema'
 import { useToast } from 'src/hooks/use-toast'
 
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
+const CREATE_ORDER_MUTATION = gql`
+  mutation CreateOrderMutation($input: CreateOrderInput!) {
+    createOrder(input: $input) {
+      id
+      orderNumber
+    }
+  }
+`
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
 const NewOrderPage = () => {
-  const [loading, setLoading] = useState(false)
   const { toast } = useToast()
 
-  const handleSubmit = async (data: OrderFormValues) => {
-    setLoading(true)
-    try {
-      // TODO: replace with GraphQL mutation
-      // const orderNumber = `#ORD-${Date.now()}`
-      // const total = data.items.reduce((s, i) => s + i.price * i.quantity, 0) * 1.1
-      // await createOrder({ variables: { input: { ...data, orderNumber, totalAmount: total, userId: '...' } } })
-      console.log('Creating order:', data)
-      await new Promise((r) => setTimeout(r, 800))
-
+  const [createOrder, { loading }] = useMutation(CREATE_ORDER_MUTATION, {
+    onCompleted: ({ createOrder: created }) => {
       toast({
         title: 'Order created',
-        description: `A new order has been created for ${data.customerName}.`,
+        description: `${created.orderNumber} has been created successfully.`,
       })
       navigate(routes.adminOrders())
-    } catch {
+    },
+    onError: (error) => {
       toast({
         title: 'Failed to create order',
-        description: 'Something went wrong. Please try again.',
+        description: error.message,
         variant: 'destructive',
       })
-    } finally {
-      setLoading(false)
-    }
+    },
+  })
+
+  const handleSubmit = async (data: OrderFormValues) => {
+    const subtotal = data.items.reduce(
+      (sum, i) => sum + i.price * i.quantity,
+      0
+    )
+    const totalAmount = parseFloat((subtotal * 1.1).toFixed(2))
+
+    await createOrder({
+      variables: {
+        input: {
+          customerName: data.customerName,
+          customerEmail: data.customerEmail,
+          customerAvatar: data.customerAvatar || null,
+          status: data.status,
+          paymentStatus: data.paymentStatus,
+          fulfillmentStatus: data.fulfillmentStatus,
+          totalAmount,
+          items: data.items.map((i) => ({
+            productId: i.productId,
+            name: i.name,
+            quantity: i.quantity,
+            unitPrice: i.price,
+          })),
+        },
+      },
+    })
   }
 
   return (

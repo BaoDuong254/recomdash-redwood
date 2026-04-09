@@ -25,6 +25,7 @@ export type Order = {
   fulfillmentStatus: FulfillmentStatus
   totalAmount: number
   createdAt: string
+  updatedAt?: string
   customer: OrderCustomer
   items?: OrderItem[]
 }

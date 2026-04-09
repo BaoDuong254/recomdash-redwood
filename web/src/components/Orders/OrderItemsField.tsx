@@ -1,6 +1,8 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 
+import { useQuery } from '@redwoodjs/web'
+
 import { Button } from 'src/components/ui/button'
 import {
   FormControl,
@@ -18,8 +20,25 @@ import {
   SelectValue,
 } from 'src/components/ui/select'
 
-import { AVAILABLE_PRODUCTS } from './mockData'
 import type { OrderFormValues } from './orderSchema'
+
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
+const AVAILABLE_PRODUCTS_QUERY = gql`
+  query AvailableProductsForOrderQuery {
+    products(pageSize: 100) {
+      products {
+        id
+        name
+        price
+      }
+    }
+  }
+`
+
+type AvailableProduct = { id: string; name: string; price: number }
 
 // ---------------------------------------------------------------------------
 // Line item subtotal display
@@ -51,8 +70,11 @@ const OrderItemsField = () => {
     name: 'items',
   })
 
+  const { data } = useQuery(AVAILABLE_PRODUCTS_QUERY)
+  const availableProducts: AvailableProduct[] = data?.products?.products ?? []
+
   const handleProductChange = (index: number, productId: string) => {
-    const product = AVAILABLE_PRODUCTS.find((p) => p.id === productId)
+    const product = availableProducts.find((p) => p.id === productId)
     if (product) {
       setValue(`items.${index}.productId`, product.id)
       setValue(`items.${index}.name`, product.name)
@@ -104,7 +126,7 @@ const OrderItemsField = () => {
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {AVAILABLE_PRODUCTS.map((p) => (
+                    {availableProducts.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         {p.name}
                       </SelectItem>

@@ -1,13 +1,18 @@
-import { Download, Plus } from 'lucide-react'
+import { Download, Loader2, Plus } from 'lucide-react'
 
 import { Button } from 'src/components/ui/button'
 
 type OrderHeaderProps = {
   onExport?: () => void
+  exportLoading?: boolean
   onCreateOrder?: () => void
 }
 
-const OrderHeader = ({ onExport, onCreateOrder }: OrderHeaderProps) => {
+const OrderHeader = ({
+  onExport,
+  exportLoading = false,
+  onCreateOrder,
+}: OrderHeaderProps) => {
   return (
     <div className="tw-flex tw-flex-col tw-gap-4 sm:tw-flex-row sm:tw-items-center sm:tw-justify-between">
       <div>
@@ -20,8 +25,17 @@ const OrderHeader = ({ onExport, onCreateOrder }: OrderHeaderProps) => {
       </div>
 
       <div className="tw-flex tw-items-center tw-gap-2">
-        <Button variant="outline" size="sm" onClick={onExport}>
-          <Download className="tw-h-4 tw-w-4" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={onExport}
+          disabled={exportLoading}
+        >
+          {exportLoading ? (
+            <Loader2 className="tw-h-4 tw-w-4 tw-animate-spin" />
+          ) : (
+            <Download className="tw-h-4 tw-w-4" />
+          )}
           Export
         </Button>
         <Button size="sm" onClick={onCreateOrder}>

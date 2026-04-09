@@ -18,21 +18,31 @@ import { cn } from 'src/lib/utils'
 
 import type { Order, OrderCustomer } from './types'
 
-const CustomerAvatar = ({ customer }: { customer: OrderCustomer }) => {
-  const initials = customer.name
-    ? customer.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : customer.email[0].toUpperCase()
+function getInitials(customer: OrderCustomer): string {
+  if (customer?.name) {
+    const computed = customer.name
+      .split(' ')
+      .map((n) => n?.[0] || '')
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+    return computed || 'U'
+  }
+  if (customer?.email) {
+    return customer.email[0]?.toUpperCase() || 'U'
+  }
+  return 'U'
+}
 
-  if (customer.avatarUrl) {
+const CustomerAvatar = ({ customer }: { customer: OrderCustomer }) => {
+  const initials = getInitials(customer)
+  const altText = customer?.name || customer?.email || 'Customer'
+
+  if (customer?.avatarUrl) {
     return (
       <img
         src={customer.avatarUrl}
-        alt={customer.name ?? customer.email}
+        alt={altText}
         className="tw-h-9 tw-w-9 tw-shrink-0 tw-rounded-full tw-border tw-border-border tw-object-cover"
       />
     )

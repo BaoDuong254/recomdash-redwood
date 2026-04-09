@@ -25,18 +25,18 @@ function buildWhere(opts: {
       ? {
           OR: [
             { orderNumber: { contains: search, mode: 'insensitive' } },
-            { user: { name: { contains: search, mode: 'insensitive' } } },
-            { user: { email: { contains: search, mode: 'insensitive' } } },
+            { customerName: { contains: search, mode: 'insensitive' } },
+            { customerEmail: { contains: search, mode: 'insensitive' } },
           ],
         }
       : {}),
   }
 }
 
-// Map a DB order record (with user + items relations) to the GraphQL shape
+// Map a DB order record to the GraphQL shape
 function toOrderShape(
   order: Prisma.OrderGetPayload<{
-    include: { user: true; items: { include: { product: true } } }
+    include: { items: { include: { product: true } } }
   }>
 ) {
   return {
@@ -47,11 +47,12 @@ function toOrderShape(
     fulfillmentStatus: order.fulfillmentStatus,
     totalAmount: Number(order.totalAmount),
     createdAt: order.createdAt,
+    updatedAt: order.updatedAt,
     customer: {
-      id: order.user.id,
-      name: order.user.name ?? null,
-      email: order.user.email,
-      avatarUrl: order.user.avatarUrl ?? null,
+      id: order.id,
+      name: order.customerName ?? null,
+      email: order.customerEmail ?? '',
+      avatarUrl: order.customerAvatar ?? null,
     },
     items: order.items
       .filter((i) => !i.deletedAt)
@@ -66,7 +67,6 @@ function toOrderShape(
 }
 
 const INCLUDE_FULL = {
-  user: true,
   items: { include: { product: true } },
 } as const
 
@@ -108,8 +108,8 @@ export const orders = async ({
 }
 
 export const order = async ({ id }: { id: string }) => {
-  const record = await db.order.findUnique({
-    where: { id },
+  const record = await db.order.findFirst({
+    where: { id, deletedAt: null },
     include: INCLUDE_FULL,
   })
   if (!record) return null
@@ -130,6 +130,24 @@ export const orderStats = async () => {
   return { total, new: newCount, paid, fulfilled, cancelled }
 }
 
+export const exportOrders = async ({
+  search,
+  status,
+  paymentStatus,
+}: {
+  search?: string | null
+  status?: OrderStatus | null
+  paymentStatus?: PaymentStatus | null
+} = {}) => {
+  const where = buildWhere({ search, status, paymentStatus })
+  const ordersData = await db.order.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: INCLUDE_FULL,
+  })
+  return ordersData.map(toOrderShape)
+}
+
 // ---------------------------------------------------------------------------
 // Mutation resolvers
 // ---------------------------------------------------------------------------
@@ -142,24 +160,29 @@ type OrderItemInput = {
 }
 
 type CreateOrderInput = {
-  orderNumber: string
+  customerName: string
+  customerEmail: string
+  customerAvatar?: string | null
   status: OrderStatus
   paymentStatus: PaymentStatus
   fulfillmentStatus: FulfillmentStatus
   totalAmount: number
-  userId: string
   items: OrderItemInput[]
 }
 
 export const createOrder = async ({ input }: { input: CreateOrderInput }) => {
+  const orderNumber = `#ORD-${Date.now()}`
+
   const record = await db.order.create({
     data: {
-      orderNumber: input.orderNumber,
+      orderNumber,
+      customerName: input.customerName,
+      customerEmail: input.customerEmail,
+      customerAvatar: input.customerAvatar ?? null,
       status: input.status,
       paymentStatus: input.paymentStatus,
       fulfillmentStatus: input.fulfillmentStatus,
       totalAmount: input.totalAmount,
-      userId: input.userId,
       items: {
         create: input.items.map((item) => ({
           name: item.name,

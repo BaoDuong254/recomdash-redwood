@@ -40,6 +40,7 @@ export const schema = gql`
     fulfillmentStatus: FulfillmentStatus!
     totalAmount: Float!
     createdAt: DateTime!
+    updatedAt: DateTime!
     customer: OrderCustomer!
     items: [OrderItem!]!
   }
@@ -67,6 +68,11 @@ export const schema = gql`
     ): OrdersResult! @requireAuth
     order(id: String!): Order @requireAuth
     orderStats: OrderStats! @requireAuth
+    exportOrders(
+      search: String
+      status: OrderStatus
+      paymentStatus: PaymentStatus
+    ): [Order!]! @requireAuth
   }
 
   input OrderItemInput {
@@ -77,12 +83,13 @@ export const schema = gql`
   }
 
   input CreateOrderInput {
-    orderNumber: String!
+    customerName: String!
+    customerEmail: String!
+    customerAvatar: String
     status: OrderStatus!
     paymentStatus: PaymentStatus!
     fulfillmentStatus: FulfillmentStatus!
     totalAmount: Float!
-    userId: String!
     items: [OrderItemInput!]!
   }
 

@@ -4,10 +4,10 @@ export const orderItemSchema = z.object({
   productId: z.string().min(1, 'Product is required'),
   name: z.string().min(1, 'Product name is required'),
   price: z
-    .number({ invalid_type_error: 'Price must be a number' })
+    .number({ error: 'Price must be a number' })
     .min(0, 'Price must be 0 or greater'),
   quantity: z
-    .number({ invalid_type_error: 'Quantity must be a number' })
+    .number({ error: 'Quantity must be a number' })
     .int('Quantity must be a whole number')
     .min(1, 'Quantity must be at least 1'),
 })

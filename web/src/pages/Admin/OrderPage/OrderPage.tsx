@@ -1,14 +1,59 @@
 import { useState } from 'react'
 
 import { navigate, routes } from '@redwoodjs/router'
+import { useMutation, useQuery } from '@redwoodjs/web'
 import { Metadata } from '@redwoodjs/web'
 
 import DeleteOrderDialog from 'src/components/Orders/DeleteOrderDialog'
-import { MOCK_ORDERS } from 'src/components/Orders/mockData'
 import OrderPageHeader from 'src/components/Orders/OrderPageHeader'
 import OrderSummary from 'src/components/Orders/OrderSummary'
 import OrderTimeline from 'src/components/Orders/OrderTimeline'
 import { useToast } from 'src/hooks/use-toast'
+
+// ---------------------------------------------------------------------------
+// GraphQL
+// ---------------------------------------------------------------------------
+
+const ORDER_QUERY = gql`
+  query OrderDetailQuery($id: String!) {
+    order(id: $id) {
+      id
+      orderNumber
+      status
+      paymentStatus
+      fulfillmentStatus
+      totalAmount
+      createdAt
+      updatedAt
+      customer {
+        id
+        name
+        email
+        avatarUrl
+      }
+      items {
+        id
+        productId
+        name
+        quantity
+        unitPrice
+      }
+    }
+  }
+`
+
+const DELETE_ORDER_MUTATION = gql`
+  mutation DeleteOrderFromDetailMutation($id: String!) {
+    deleteOrder(id: $id) {
+      id
+      orderNumber
+    }
+  }
+`
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 type OrderPageProps = {
   id: string
@@ -16,36 +61,53 @@ type OrderPageProps = {
 
 const OrderPage = ({ id }: OrderPageProps) => {
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [deleteLoading, setDeleteLoading] = useState(false)
   const { toast } = useToast()
 
-  // TODO: replace with a RedwoodJS Cell / GraphQL query
-  const order = MOCK_ORDERS.find((o) => o.id === id)
-
-  const handleDelete = async () => {
-    setDeleteLoading(true)
-    try {
-      // TODO: replace with GraphQL mutation
-      // await deleteOrder({ variables: { id } })
-      console.log('Deleting order:', id)
-      await new Promise((r) => setTimeout(r, 600))
-
+  const { data, loading } = useQuery(ORDER_QUERY, {
+    variables: { id },
+    onError: (error) => {
       toast({
-        title: 'Order deleted',
-        description: `${order?.orderNumber ?? 'Order'} has been removed.`,
-      })
-      setDeleteOpen(false)
-      navigate(routes.adminOrders())
-    } catch {
-      toast({
-        title: 'Failed to delete order',
-        description: 'Something went wrong. Please try again.',
+        title: 'Failed to load order',
+        description: error.message,
         variant: 'destructive',
       })
-    } finally {
-      setDeleteLoading(false)
+    },
+  })
+
+  const [deleteOrder, { loading: deleteLoading }] = useMutation(
+    DELETE_ORDER_MUTATION,
+    {
+      onCompleted: ({ deleteOrder: deleted }) => {
+        toast({
+          title: 'Order deleted',
+          description: `${deleted.orderNumber} has been removed.`,
+        })
+        setDeleteOpen(false)
+        navigate(routes.adminOrders())
+      },
+      onError: (error) => {
+        toast({
+          title: 'Failed to delete order',
+          description: error.message,
+          variant: 'destructive',
+        })
+      },
     }
+  )
+
+  const handleDelete = async () => {
+    await deleteOrder({ variables: { id } })
   }
+
+  if (loading) {
+    return (
+      <div className="tw-mx-auto tw-max-w-3xl tw-py-16 tw-text-center tw-text-muted-foreground">
+        <p className="tw-text-sm">Loading order details…</p>
+      </div>
+    )
+  }
+
+  const order = data?.order
 
   if (!order) {
     return (

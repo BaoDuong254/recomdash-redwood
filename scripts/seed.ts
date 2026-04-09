@@ -335,6 +335,9 @@ export default async () => {
         data: {
           userId: user.id,
           orderNumber,
+          customerName: user.name ?? user.email,
+          customerEmail: user.email,
+          customerAvatar: user.avatarUrl ?? null,
           status,
           paymentStatus,
           fulfillmentStatus,
