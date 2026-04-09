@@ -2,7 +2,7 @@ import crypto from 'crypto'
 
 import type { Prisma, UserRole, UserStatus } from '@prisma/client'
 
-import { UserInputError } from '@redwoodjs/graphql-server'
+import { ForbiddenError, UserInputError } from '@redwoodjs/graphql-server'
 
 import { db } from 'src/lib/db'
 
@@ -186,6 +186,12 @@ export const updateUser = async ({
 }
 
 export const deleteUser = async ({ id }: { id: string }) => {
+  // Prevent self-deletion — enforced at the service layer so it cannot be
+  // bypassed even if someone calls the mutation directly.
+  if (id === (context.currentUser?.id as string)) {
+    throw new ForbiddenError('You cannot delete your own account.')
+  }
+
   // Soft delete — preserves referential integrity with orders
   return db.user.update({
     where: { id },

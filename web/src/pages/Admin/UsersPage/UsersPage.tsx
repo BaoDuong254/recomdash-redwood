@@ -4,6 +4,7 @@ import { navigate, routes } from '@redwoodjs/router'
 import { useMutation, useQuery } from '@redwoodjs/web'
 import { Metadata } from '@redwoodjs/web'
 
+import { useAuth } from 'src/auth'
 import Pagination from 'src/components/Products/Pagination'
 import type { PaginationState } from 'src/components/Products/types'
 import DeleteUserDialog from 'src/components/Users/DeleteUserDialog'
@@ -74,6 +75,7 @@ function useDebounce<T>(value: T, delay = 400): T {
 
 const UsersPage = () => {
   const { toast } = useToast()
+  const { currentUser } = useAuth()
 
   const [filters, setFilters] = useState<UserFiltersState>({
     search: '',
@@ -168,6 +170,7 @@ const UsersPage = () => {
         <UserTable
           users={users}
           loading={loading}
+          currentUserId={currentUser?.id}
           onEdit={(user) => navigate(routes.adminEditUser({ id: user.id }))}
           onDelete={(user) => setDeleteTarget(user)}
         />

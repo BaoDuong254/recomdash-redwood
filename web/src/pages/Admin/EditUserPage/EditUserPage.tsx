@@ -48,6 +48,13 @@ const EditUserPage = ({ id }: EditUserPageProps) => {
 
   const { data, loading: queryLoading } = useQuery(USER_QUERY, {
     variables: { id },
+    onError: (error) => {
+      toast({
+        title: 'Failed to load user',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
   })
 
   const [updateUser, { loading: mutationLoading }] = useMutation(

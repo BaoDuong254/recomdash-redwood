@@ -14,6 +14,7 @@ import UserRow from './UserRow'
 type UserTableProps = {
   users: User[]
   loading?: boolean
+  currentUserId?: string
   onEdit?: (user: User) => void
   onDelete?: (user: User) => void
 }
@@ -80,6 +81,7 @@ const EmptyState = () => (
 const UserTable = ({
   users,
   loading = false,
+  currentUserId,
   onEdit,
   onDelete,
 }: UserTableProps) => {
@@ -105,6 +107,7 @@ const UserTable = ({
               <UserRow
                 key={user.id}
                 user={user}
+                isSelf={user.id === currentUserId}
                 onEdit={onEdit}
                 onDelete={onDelete}
               />
