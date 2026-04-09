@@ -215,147 +215,158 @@ export default async () => {
 
     // ─── Orders ───────────────────────────────────────────────────────────────
 
-    const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
+    // Clear existing orders so re-running seed stays idempotent
+    await db.orderItem.deleteMany({})
+    await db.order.deleteMany({})
 
+    const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
     const buyers = createdUsers.slice(1)
 
-    const ordersToCreate = [
-      {
-        user: createdUsers[2],
-        status: 'FULFILLED' as const,
-        paymentStatus: 'PAID' as const,
-        fulfillmentStatus: 'FULFILLED' as const,
-        items: [
-          { product: createdProducts[0], quantity: 1 },
-          { product: createdProducts[6], quantity: 2 },
-        ],
-      },
-      {
-        user: createdUsers[2],
-        status: 'PAID' as const,
-        paymentStatus: 'PAID' as const,
-        fulfillmentStatus: 'UNFULFILLED' as const,
-        items: [{ product: createdProducts[1], quantity: 1 }],
-      },
-      {
-        user: createdUsers[3],
-        status: 'NEW' as const,
-        paymentStatus: 'PENDING' as const,
-        fulfillmentStatus: 'UNFULFILLED' as const,
-        items: [
-          { product: createdProducts[5], quantity: 1 },
-          { product: createdProducts[8], quantity: 1 },
-        ],
-      },
-      {
-        user: createdUsers[3],
-        status: 'CANCELLED' as const,
-        paymentStatus: 'REFUNDED' as const,
-        fulfillmentStatus: 'UNFULFILLED' as const,
-        items: [{ product: createdProducts[4], quantity: 1 }],
-      },
-      {
-        user: createdUsers[4],
-        status: 'FULFILLED' as const,
-        paymentStatus: 'PAID' as const,
-        fulfillmentStatus: 'FULFILLED' as const,
-        items: [
-          { product: createdProducts[2], quantity: 1 },
-          { product: createdProducts[10], quantity: 1 },
-        ],
-      },
-      {
-        user: createdUsers[4],
-        status: 'NEW' as const,
-        paymentStatus: 'PENDING' as const,
-        fulfillmentStatus: 'UNFULFILLED' as const,
-        items: [{ product: createdProducts[9], quantity: 1 }],
-      },
-      {
-        user: createdUsers[1],
-        status: 'FULFILLED' as const,
-        paymentStatus: 'PAID' as const,
-        fulfillmentStatus: 'FULFILLED' as const,
-        items: [
-          { product: createdProducts[7], quantity: 1 },
-          { product: createdProducts[6], quantity: 3 },
-        ],
-      },
-      ...Array.from({ length: 8 }, () => {
-        const numItems = Math.floor(Math.random() * 3) + 1
-        const statusOptions = [
-          {
-            status: 'NEW' as const,
-            paymentStatus: 'PENDING' as const,
-            fulfillmentStatus: 'UNFULFILLED' as const,
-          },
-          {
-            status: 'PAID' as const,
-            paymentStatus: 'PAID' as const,
-            fulfillmentStatus: 'UNFULFILLED' as const,
-          },
-          {
-            status: 'FULFILLED' as const,
-            paymentStatus: 'PAID' as const,
-            fulfillmentStatus: 'FULFILLED' as const,
-          },
-          {
-            status: 'CANCELLED' as const,
-            paymentStatus: 'REFUNDED' as const,
-            fulfillmentStatus: 'UNFULFILLED' as const,
-          },
-        ]
-        const statusCombo = pick(statusOptions)
-        return {
-          user: pick(buyers),
-          ...statusCombo,
-          items: Array.from({ length: numItems }, () => ({
-            product: pick(createdProducts),
-            quantity: Math.floor(Math.random() * 4) + 1,
-          })),
-        }
+    // Weighted status combos: 50% fulfilled, 25% paid, 15% new, 10% cancelled
+    type StatusCombo = {
+      status: 'NEW' | 'PAID' | 'FULFILLED' | 'CANCELLED'
+      paymentStatus: 'PENDING' | 'PAID' | 'REFUNDED'
+      fulfillmentStatus: 'UNFULFILLED' | 'FULFILLED'
+    }
+    const STATUS_COMBOS: StatusCombo[] = [
+      ...Array(5).fill({
+        status: 'FULFILLED',
+        paymentStatus: 'PAID',
+        fulfillmentStatus: 'FULFILLED',
+      }),
+      ...Array(3).fill({
+        status: 'PAID',
+        paymentStatus: 'PAID',
+        fulfillmentStatus: 'UNFULFILLED',
+      }),
+      ...Array(1).fill({
+        status: 'NEW',
+        paymentStatus: 'PENDING',
+        fulfillmentStatus: 'UNFULFILLED',
+      }),
+      ...Array(1).fill({
+        status: 'CANCELLED',
+        paymentStatus: 'REFUNDED',
+        fulfillmentStatus: 'UNFULFILLED',
       }),
     ]
 
-    let orderCount = 0
-    for (const {
-      user,
-      status,
-      paymentStatus,
-      fulfillmentStatus,
-      items,
-    } of ordersToCreate) {
-      const totalAmount = items.reduce(
-        (sum, { product, quantity }) => sum + Number(product.price) * quantity,
-        0
+    // Returns a random date within [start, end]
+    const randomDate = (start: Date, end: Date): Date =>
+      new Date(
+        start.getTime() + Math.random() * (end.getTime() - start.getTime())
       )
-      const orderNumber = `#ORD-${Date.now()}-${orderCount + 1}`
 
-      await db.order.create({
-        data: {
-          userId: user.id,
-          orderNumber,
-          customerName: user.name ?? user.email,
-          customerEmail: user.email,
-          customerAvatar: user.avatarUrl ?? null,
-          status,
-          paymentStatus,
-          fulfillmentStatus,
-          totalAmount,
-          items: {
-            create: items.map(({ product, quantity }) => ({
-              name: product.name,
-              productId: product.id,
-              quantity,
-              unitPrice: product.price,
-            })),
-          },
-        },
-      })
-      orderCount++
+    // Returns a random order amount between $50 and $1200
+    const randomAmount = (): number =>
+      parseFloat((Math.random() * 1150 + 50).toFixed(2))
+
+    let orderSeq = 0
+
+    const seedOrdersInRange = async (
+      count: number,
+      start: Date,
+      end: Date,
+      withItems = false
+    ) => {
+      for (let i = 0; i < count; i++) {
+        const user = pick(buyers)
+        const combo = pick(STATUS_COMBOS) as StatusCombo
+        const createdAt = randomDate(start, end)
+        orderSeq++
+        const orderNumber = `#ORD-${createdAt.getFullYear()}${String(createdAt.getMonth() + 1).padStart(2, '0')}-${String(orderSeq).padStart(4, '0')}`
+
+        if (withItems) {
+          const numItems = Math.floor(Math.random() * 3) + 1
+          const selectedItems = Array.from({ length: numItems }, () => ({
+            product: pick(createdProducts),
+            quantity: Math.floor(Math.random() * 3) + 1,
+          }))
+          const totalAmount = selectedItems.reduce(
+            (s, { product, quantity }) => s + Number(product.price) * quantity,
+            0
+          )
+          await db.order.create({
+            data: {
+              userId: user.id,
+              orderNumber,
+              customerName: user.name ?? user.email,
+              customerEmail: user.email,
+              customerAvatar: user.avatarUrl ?? null,
+              ...combo,
+              totalAmount: parseFloat(totalAmount.toFixed(2)),
+              createdAt,
+              updatedAt: createdAt,
+              items: {
+                create: selectedItems.map(({ product, quantity }) => ({
+                  name: product.name,
+                  productId: product.id,
+                  quantity,
+                  unitPrice: product.price,
+                })),
+              },
+            },
+          })
+        } else {
+          await db.order.create({
+            data: {
+              userId: user.id,
+              orderNumber,
+              customerName: user.name ?? user.email,
+              customerEmail: user.email,
+              customerAvatar: user.avatarUrl ?? null,
+              ...combo,
+              totalAmount: randomAmount(),
+              createdAt,
+              updatedAt: createdAt,
+            },
+          })
+        }
+      }
     }
 
-    console.info(`  Seeded ${orderCount} orders`)
+    const now = new Date()
+
+    // ── Historical years (2020–2023): 60 orders/year, no items needed ──────────
+    for (let year = 2020; year <= 2023; year++) {
+      const count = 60 + year - 2020 // 60, 61, 62, 63
+      await seedOrdersInRange(
+        count,
+        new Date(year, 0, 1),
+        new Date(year, 11, 31, 23, 59, 59)
+      )
+    }
+
+    // ── Last year (2024): 80 orders spread across all 12 months ────────────────
+    await seedOrdersInRange(
+      80,
+      new Date(2024, 0, 1),
+      new Date(2024, 11, 31, 23, 59, 59)
+    )
+
+    // ── Current year up to last month: 8 orders/month with items ───────────────
+    const thisYear = now.getFullYear()
+    const thisMonth = now.getMonth()
+    for (let m = 0; m < thisMonth; m++) {
+      await seedOrdersInRange(
+        8,
+        new Date(thisYear, m, 1),
+        new Date(thisYear, m + 1, 0, 23, 59, 59),
+        true
+      )
+    }
+
+    // ── Last 7 days: 4 orders/day with items so the weekly chart has data ──────
+    for (let d = 6; d >= 0; d--) {
+      const dayStart = new Date(now)
+      dayStart.setDate(dayStart.getDate() - d)
+      dayStart.setHours(0, 0, 0, 0)
+      const dayEnd = new Date(dayStart)
+      dayEnd.setHours(23, 59, 59, 999)
+      await seedOrdersInRange(4, dayStart, dayEnd, true)
+    }
+
+    console.info(`  Seeded ${orderSeq} orders`)
     console.info('\n  Database seeded successfully!\n')
   } catch (error) {
     console.error(error)
