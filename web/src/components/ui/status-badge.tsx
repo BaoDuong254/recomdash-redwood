@@ -49,6 +49,24 @@ export const BADGE_TOKENS = {
     '!tw-bg-orange-100 !tw-text-orange-700 dark:!tw-bg-orange-900/50 dark:!tw-text-orange-300',
   roleCustomer:
     '!tw-bg-slate-100 !tw-text-slate-600 dark:!tw-bg-slate-800 dark:!tw-text-slate-300',
+
+  // ── Order status ──────────────────────────────────────────────────────────
+  orderNew:
+    '!tw-bg-blue-100 !tw-text-blue-700 dark:!tw-bg-blue-900/50 dark:!tw-text-blue-300',
+  orderPaid:
+    '!tw-bg-amber-100 !tw-text-amber-700 dark:!tw-bg-amber-900/50 dark:!tw-text-amber-300',
+  orderFulfilled:
+    '!tw-bg-green-100 !tw-text-green-800 dark:!tw-bg-green-900/50 dark:!tw-text-green-300',
+  orderCancelled:
+    '!tw-bg-red-100 !tw-text-red-700 dark:!tw-bg-red-900/50 dark:!tw-text-red-300',
+
+  // ── Payment status ────────────────────────────────────────────────────────
+  paymentPaid:
+    '!tw-bg-green-100 !tw-text-green-800 dark:!tw-bg-green-900/50 dark:!tw-text-green-300',
+  paymentPending:
+    '!tw-bg-amber-100 !tw-text-amber-700 dark:!tw-bg-amber-900/50 dark:!tw-text-amber-300',
+  paymentRefunded:
+    '!tw-bg-slate-100 !tw-text-slate-600 dark:!tw-bg-slate-800 dark:!tw-text-slate-300',
 } as const
 
 export type BadgeToken = keyof typeof BADGE_TOKENS
@@ -69,6 +87,13 @@ const DOT_COLORS: Record<BadgeToken, string> = {
   roleStaff: 'tw-bg-sky-500 dark:tw-bg-sky-400',
   roleSeller: 'tw-bg-orange-500 dark:tw-bg-orange-400',
   roleCustomer: 'tw-bg-slate-400 dark:tw-bg-slate-500',
+  orderNew: 'tw-bg-blue-500 dark:tw-bg-blue-400',
+  orderPaid: 'tw-bg-amber-500 dark:tw-bg-amber-400',
+  orderFulfilled: 'tw-bg-green-500 dark:tw-bg-green-400',
+  orderCancelled: 'tw-bg-red-500 dark:tw-bg-red-400',
+  paymentPaid: 'tw-bg-green-500 dark:tw-bg-green-400',
+  paymentPending: 'tw-bg-amber-500 dark:tw-bg-amber-400',
+  paymentRefunded: 'tw-bg-slate-400 dark:tw-bg-slate-500',
 }
 
 // ---------------------------------------------------------------------------
@@ -190,4 +215,43 @@ export const UserRoleBadge = ({ role }: { role: UserRoleType }) => {
   const normalizedRole = String(role).toUpperCase() as UserRoleType
   const config = ROLE_BADGE_CONFIG[normalizedRole] ?? ROLE_BADGE_CONFIG.USER
   return <SemanticBadge token={config.token} label={config.label} />
+}
+
+// Order status
+type OrderStatusType = 'NEW' | 'PAID' | 'FULFILLED' | 'CANCELLED'
+
+const ORDER_STATUS_CONFIG: Record<
+  OrderStatusType,
+  { token: BadgeToken; label: string }
+> = {
+  NEW: { token: 'orderNew', label: 'New' },
+  PAID: { token: 'orderPaid', label: 'Paid' },
+  FULFILLED: { token: 'orderFulfilled', label: 'Fulfilled' },
+  CANCELLED: { token: 'orderCancelled', label: 'Cancelled' },
+}
+
+export const OrderStatusBadge = ({ status }: { status: OrderStatusType }) => {
+  const config = ORDER_STATUS_CONFIG[status] ?? ORDER_STATUS_CONFIG.NEW
+  return <SemanticBadge token={config.token} label={config.label} dot />
+}
+
+// Payment status
+type PaymentStatusType = 'PENDING' | 'PAID' | 'REFUNDED'
+
+const PAYMENT_STATUS_CONFIG: Record<
+  PaymentStatusType,
+  { token: BadgeToken; label: string }
+> = {
+  PAID: { token: 'paymentPaid', label: 'Paid' },
+  PENDING: { token: 'paymentPending', label: 'Pending' },
+  REFUNDED: { token: 'paymentRefunded', label: 'Refunded' },
+}
+
+export const PaymentStatusBadge = ({
+  status,
+}: {
+  status: PaymentStatusType
+}) => {
+  const config = PAYMENT_STATUS_CONFIG[status] ?? PAYMENT_STATUS_CONFIG.PENDING
+  return <SemanticBadge token={config.token} label={config.label} dot />
 }
