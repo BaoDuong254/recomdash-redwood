@@ -35,7 +35,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss-animate": "^1.0.7",
     "vite-tsconfig-paths": "^4.3.2",
-    "zod": "^4.3.6"
+    "zod": "4.0.17"
   },
   "devDependencies": {
     "@redwoodjs/vite": "8.9.0",
