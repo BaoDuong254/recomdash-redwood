@@ -52,7 +52,7 @@ export const GeminiResponseSchema = z.object({
     .transform((v) => v as IntentName),
   entity: z.string(),
   action: z.string(),
-  parameters: z.record(z.unknown()).default({}),
+  parameters: z.record(z.string(), z.unknown()).default({}),
   reply: z.string().min(1),
 })
 
