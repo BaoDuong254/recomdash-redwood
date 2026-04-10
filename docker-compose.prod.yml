@@ -1,0 +1,104 @@
+version: '3.9'
+
+# Production compose file — no secrets baked in.
+# All sensitive values come from the environment or a secrets manager.
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  # ── Reverse proxy ────────────────────────────────────────────────────────
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    image: recomdash-nginx:${TAG:-latest}
+    ports:
+      - '80:80'
+    depends_on:
+      redwood-web:
+        condition: service_healthy
+      redwood-api:
+        condition: service_healthy
+      go-realtime:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+
+  # ── React SPA (served by nginx) ──────────────────────────────────────────
+  redwood-web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      # REDWOOD_ENV_* are left empty → browser uses relative URLs through nginx
+      args:
+        REDWOOD_ENV_GO_SERVICE_URL: ''
+        REDWOOD_ENV_GO_SERVICE_WS_URL: ''
+    image: recomdash-web:${TAG:-latest}
+    expose:
+      - '3000'
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/healthz']
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ── Redwood GraphQL API ──────────────────────────────────────────────────
+  redwood-api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    image: recomdash-api:${TAG:-latest}
+    expose:
+      - '8911'
+    environment:
+      # All secrets injected at runtime — never in image
+      DATABASE_URL: ${DATABASE_URL}
+      SESSION_SECRET: ${SESSION_SECRET}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      NODE_ENV: production
+    restart: unless-stopped
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8911/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Go realtime service ──────────────────────────────────────────────────
+  go-realtime:
+    build:
+      context: ./go-realtime
+      dockerfile: Dockerfile
+    image: recomdash-go-realtime:${TAG:-latest}
+    expose:
+      - '8080'
+    environment:
+      PORT: '8080'
+      REDIS_ADDR: ${REDIS_ADDR}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_DB: ${REDIS_DB:-0}
+      # Points at the internal redwood-api container.
+      # Path includes /.redwood/functions so that
+      # baseURL + "/dashboardBootstrap" resolves correctly.
+      BOOTSTRAP_API_URL: 'http://redwood-api:8911/.redwood/functions'
+      ENV: production
+    depends_on:
+      redwood-api:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge

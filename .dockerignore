@@ -1,0 +1,28 @@
+# Secrets — never bake into images
+.env
+.env.*
+!.env.example
+
+# Dependencies (installed in image)
+node_modules
+
+# Git metadata
+.git
+.gitignore
+.github
+
+# Build artefacts
+dist
+.redwood
+
+# Docs / dev-only files
+docs
+*.md
+!README.md
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Go service has its own build context
+go-realtime

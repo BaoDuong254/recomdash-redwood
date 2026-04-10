@@ -1,0 +1,20 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Git metadata
+.git
+.gitignore
+
+# Dev-only compose file
+docker-compose.yml
+docker-compose*.yml
+
+# Test output
+*.out
+coverage.html
+
+# OS noise
+.DS_Store
+Thumbs.db
