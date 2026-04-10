@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 
+import AdminChatbot from 'src/components/AdminChatbot/AdminChatbot'
 import Header from 'src/components/Header/Header'
 import Sidebar from 'src/components/Sidebar/Sidebar'
 
@@ -65,6 +66,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </main>
         </div>
       </div>
+
+      <AdminChatbot />
     </SidebarContext.Provider>
   )
 }
