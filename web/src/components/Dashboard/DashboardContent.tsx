@@ -16,16 +16,34 @@ import { useRealtimeDashboard } from 'src/hooks/useRealtimeDashboard'
 import { TIME_RANGE_OPTIONS, type TimeRange } from './DashboardHeader'
 
 // ---------------------------------------------------------------------------
-// GraphQL
+// GraphQL queries — baselines used while Go projection is not yet ready.
+//
+// Two separate queries are needed because they have different semantics:
+//
+//  ALL_TIME_STATS_QUERY  — KPI totals with NO time-range filter.
+//    Mirrors Go's all-time projection (sum of all non-deleted orders).
+//    Fetched once on mount; does NOT change when timeRange changes.
+//    Prevents "only today's data" when Go bootstrap is in progress.
+//
+//  DASHBOARD_BASELINE_QUERY — charts + trends + activeUsers.
+//    Time-range-scoped (re-fetched on timeRange change).
+//    Charts and trend percentages are always relative to the selected range.
 // ---------------------------------------------------------------------------
 
-const DASHBOARD_STATS_QUERY = gql`
-  query DashboardStatsQuery($timeRange: String!) {
+const ALL_TIME_STATS_QUERY = gql`
+  query AllTimeStatsQuery {
+    allTimeStats {
+      totalRevenue
+      totalOrders
+      avgOrderValue
+    }
+  }
+`
+
+const DASHBOARD_BASELINE_QUERY = gql`
+  query DashboardBaselineQuery($timeRange: String!) {
     dashboardStats(timeRange: $timeRange) {
       metrics {
-        totalRevenue
-        totalOrders
-        avgOrderValue
         activeUsers
         revenueTrend
         ordersTrend
@@ -97,40 +115,99 @@ export interface DashboardContentProps {
 // ---------------------------------------------------------------------------
 
 const DashboardContent = ({ timeRange }: DashboardContentProps) => {
-  const trendLabel =
-    TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.trendLabel ??
-    'vs last period'
+  const rangeOption =
+    TIME_RANGE_OPTIONS.find((o) => o.value === timeRange) ??
+    TIME_RANGE_OPTIONS[0]
+  const trendLabel = rangeOption.trendLabel
 
-  const { data, loading, refetch } = useQuery(DASHBOARD_STATS_QUERY, {
+  // All-time KPI totals — fetched once, not re-fetched on timeRange changes.
+  // Used as the KPI fallback while Go bootstrap is in progress so the cards
+  // always show the correct all-time totals (never time-range-scoped numbers).
+  const { data: allTimeData } = useQuery(ALL_TIME_STATS_QUERY)
+
+  // Time-range-scoped GraphQL baseline — charts, trends, activeUsers.
+  // Re-fetched whenever timeRange changes (infrequent).
+  const { data: baselineData } = useQuery(DASHBOARD_BASELINE_QUERY, {
     variables: { timeRange },
   })
 
-  // Connect to the Go WebSocket service.  Any order event (create / update /
-  // delete) sets a new `latestOrder` reference — we use that as a signal to
-  // refetch the GraphQL query so KPI cards, trend percentages, and charts all
-  // stay in sync with the current time-range selection.
-  const { latestOrder, connected } = useRealtimeDashboard()
+  // Go WebSocket — full live dashboard projection.
+  const { snapshot, connected } = useRealtimeDashboard()
 
-  React.useEffect(() => {
-    if (!latestOrder) return
-    // Debounce: if several events arrive in quick succession (e.g. order
-    // generator in fast mode), wait 400 ms and fire a single refetch.
-    const timer = setTimeout(() => {
-      refetch()
-    }, 400)
-    return () => clearTimeout(timer)
-  }, [latestOrder, refetch])
+  // The Go projection is only trusted once it has been hydrated from a reliable
+  // source (Redis on restart, or DB bootstrap on cold start).
+  // ready=false means we must NOT render Go data — fall back to GraphQL.
+  const isGoReady = snapshot?.ready === true
 
-  const stats = data?.dashboardStats
+  const gqlStats = baselineData?.dashboardStats
+  const gqlMetrics = gqlStats?.metrics
+  const gqlAllTime = allTimeData?.allTimeStats
 
-  // Derived chart arrays (fall back to empty arrays while loading)
-  const weeklySales: SalesDataPoint[] = stats?.weeklySales ?? []
-  const monthlySales: SalesDataPoint[] = stats?.monthlySales ?? []
-  const yearlySales: SalesDataPoint[] = stats?.yearlySales ?? []
-  const orderStatusData: OrderStatusItem[] = stats?.orderStatus ?? []
+  // ── Chart datasets ────────────────────────────────────────────────────────
+  //
+  // Source priority:
+  //   Go ready   → Go snapshot  (updates on every order event, no GQL round-trip)
+  //   Go not ready → GraphQL baseline (non-zero DB data while bootstrap runs)
+  //
+  // Chart arrays default to [] only after we know which source to use.
+  // Never default to [] while both sources are still loading (show skeleton
+  // or the last-known values instead of a misleading empty chart).
+  const weeklySales: SalesDataPoint[] = isGoReady
+    ? (snapshot!.weeklySales ?? [])
+    : (gqlStats?.weeklySales ?? [])
+
+  const monthlySales: SalesDataPoint[] = isGoReady
+    ? (snapshot!.monthlySales ?? [])
+    : (gqlStats?.monthlySales ?? [])
+
+  const yearlySales: SalesDataPoint[] = isGoReady
+    ? (snapshot!.yearlySales ?? [])
+    : (gqlStats?.yearlySales ?? [])
+
+  // orderStatus: Go provides all ranges in one snapshot; GraphQL provides the
+  // current timeRange only.
+  const orderStatusData: OrderStatusItem[] = isGoReady
+    ? (snapshot!.orderStatus[timeRange] ?? [])
+    : (gqlStats?.orderStatus ?? [])
+
   const totalOrders = orderStatusData.reduce((s, i) => s + i.value, 0)
 
-  const metrics = stats?.metrics
+  // ── KPI metrics ───────────────────────────────────────────────────────────
+  //
+  // Render null (→ skeleton) only while BOTH sources are still loading.
+  // Once either is available, show real data — never show hardcoded zeros.
+  //
+  // KPI totals (totalRevenue, totalOrders, avgOrderValue) are ALL-TIME values:
+  //   • Go ready  → snapshot.metrics  (maintained by the realtime projection)
+  //   • Go not ready → allTimeStats   (dedicated all-time GraphQL query)
+  //
+  // Using the all-time GraphQL query ensures the KPI cards always show the
+  // full dataset (all 445 orders, not just today's) while Go is bootstrapping.
+  const metrics = React.useMemo(() => {
+    if (!isGoReady && !gqlAllTime) {
+      // Neither source has loaded yet — hold the skeleton.
+      return null
+    }
+
+    return {
+      // All-time totals: Go snapshot when ready, dedicated all-time query otherwise.
+      totalRevenue: isGoReady
+        ? snapshot!.metrics.totalRevenue
+        : gqlAllTime!.totalRevenue,
+      totalOrders: isGoReady
+        ? snapshot!.metrics.totalOrders
+        : gqlAllTime!.totalOrders,
+      avgOrderValue: isGoReady
+        ? snapshot!.metrics.avgOrderValue
+        : gqlAllTime!.avgOrderValue,
+      // Trend percentages and activeUsers are always time-range-scoped from GraphQL.
+      activeUsers: gqlMetrics?.activeUsers ?? 0,
+      revenueTrend: gqlMetrics?.revenueTrend ?? 0,
+      ordersTrend: gqlMetrics?.ordersTrend ?? 0,
+      avgOrderValueTrend: gqlMetrics?.avgOrderValueTrend ?? 0,
+      activeUsersTrend: gqlMetrics?.activeUsersTrend ?? 0,
+    }
+  }, [snapshot, isGoReady, gqlAllTime, gqlMetrics])
 
   return (
     <div className="tw-space-y-6">
@@ -154,7 +231,7 @@ const DashboardContent = ({ timeRange }: DashboardContentProps) => {
 
       {/* ── KPI cards ─────────────────────────────────────────────────────── */}
       <div className="tw-grid tw-gap-4 sm:tw-grid-cols-2 lg:tw-grid-cols-4">
-        {loading || !metrics ? (
+        {!metrics ? (
           <>
             <MetricSkeleton />
             <MetricSkeleton />
@@ -202,7 +279,11 @@ const DashboardContent = ({ timeRange }: DashboardContentProps) => {
           monthlyData={monthlySales}
           yearlyData={yearlySales}
         />
-        <OrderStatusChart data={orderStatusData} totalOrders={totalOrders} />
+        <OrderStatusChart
+          data={orderStatusData}
+          totalOrders={totalOrders}
+          rangeLabel={rangeOption.label}
+        />
       </div>
     </div>
   )

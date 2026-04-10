@@ -295,6 +295,27 @@ async function getOrderStatus(start: Date, end: Date) {
 // Main resolver
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// All-time stats — no time-range filter, mirrors Go's all-time projection
+// ---------------------------------------------------------------------------
+
+export const allTimeStats = async () => {
+  const orders = await db.order.findMany({
+    where: { deletedAt: null },
+    select: { totalAmount: true },
+  })
+
+  const totalRevenue = orders.reduce((s, o) => s + Number(o.totalAmount), 0)
+  const totalOrders = orders.length
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+
+  return {
+    totalRevenue: parseFloat(totalRevenue.toFixed(2)),
+    totalOrders,
+    avgOrderValue: parseFloat(avgOrderValue.toFixed(2)),
+  }
+}
+
 export const dashboardStats = async ({ timeRange }: { timeRange: string }) => {
   const bounds = getDateBounds(timeRange as TimeRange)
 

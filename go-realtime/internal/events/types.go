@@ -61,10 +61,17 @@ type OrderEvent struct {
 type WSMessageType string
 
 const (
+	// Legacy per-entity messages — kept for potential future consumers.
 	WSTypeMetricsUpdated WSMessageType = "metrics.updated"
 	WSTypeOrderCreated   WSMessageType = "order.created"
 	WSTypeOrderUpdated   WSMessageType = "order.updated"
 	WSTypeOrderDeleted   WSMessageType = "order.deleted"
+
+	// Dashboard projection messages — primary contract with the frontend.
+	// dashboard.snapshot: full state sent once on client connect.
+	// dashboard.updated:  full state sent after every processed order event.
+	WSTypeDashboardSnapshot WSMessageType = "dashboard.snapshot"
+	WSTypeDashboardUpdated  WSMessageType = "dashboard.updated"
 )
 
 // WSMessage is the envelope for every outbound WebSocket message.
@@ -74,6 +81,7 @@ type WSMessage struct {
 }
 
 // MetricsSnapshot is the payload for WSTypeMetricsUpdated messages.
+// It contains all-time running totals (not scoped to a time range).
 type MetricsSnapshot struct {
 	TotalRevenue  float64     `json:"totalRevenue"`
 	TotalOrders   int64       `json:"totalOrders"`
@@ -91,4 +99,72 @@ type OrderBrief struct {
 	TotalAmount  float64   `json:"totalAmount"`
 	CustomerName string    `json:"customerName"`
 	CreatedAt    time.Time `json:"createdAt"`
+}
+
+// ---------------------------------------------------------------------------
+// Full dashboard projection — chart-aware wire format
+// ---------------------------------------------------------------------------
+
+// SalesBucket is a single labeled revenue point for chart rendering.
+// Label matches the GraphQL convention: "Mon"/"Tue" for weekly, "Jan" for
+// monthly, "2025" for yearly.
+type SalesBucket struct {
+	Label   string  `json:"label"`
+	Revenue float64 `json:"revenue"`
+}
+
+// StatusCount is a single slice of an order-status donut/pie chart.
+// Colors are fixed to match the GraphQL dashboard service.
+type StatusCount struct {
+	Label string `json:"label"`
+	Value int64  `json:"value"`
+	Color string `json:"color"`
+}
+
+// OrderStatusByRange holds pre-computed status distributions for all four
+// time ranges so the frontend can switch ranges without a GraphQL round-trip.
+type OrderStatusByRange struct {
+	Today   []StatusCount `json:"today"`
+	SevenD  []StatusCount `json:"7d"`
+	ThirtyD []StatusCount `json:"30d"`
+	TwelveM []StatusCount `json:"12m"`
+}
+
+// DashboardSnapshot is the canonical realtime projection sent to clients on
+// connect (dashboard.snapshot) and after each processed event (dashboard.updated).
+// It is a superset of MetricsSnapshot that also includes all chart datasets.
+//
+// Readiness contract:
+//   - Ready=false means the projection has NOT been hydrated from a reliable
+//     source yet (Redis empty on startup, bootstrap in progress). Clients MUST
+//     ignore the data payload when Ready=false and fall back to their own
+//     source of truth (e.g. GraphQL baseline).
+//   - Ready=true means the projection was hydrated from a reliable source
+//     (Redis on restart, or DB bootstrap) and can be trusted for rendering.
+//   - BootstrapSource records which source completed the hydration:
+//     "redis", "db-bootstrap", or "empty" (never emitted with Ready=true).
+type DashboardSnapshot struct {
+	Metrics         MetricsSnapshot    `json:"metrics"`
+	WeeklySales     []SalesBucket      `json:"weeklySales"`
+	MonthlySales    []SalesBucket      `json:"monthlySales"`
+	YearlySales     []SalesBucket      `json:"yearlySales"`
+	OrderStatus     OrderStatusByRange `json:"orderStatus"`
+	GeneratedAt     time.Time          `json:"generatedAt"`
+	Version         int64              `json:"version"`
+	Ready           bool               `json:"ready"`
+	BootstrapSource string             `json:"bootstrapSource"`
+}
+
+// ---------------------------------------------------------------------------
+// Order contribution index
+// ---------------------------------------------------------------------------
+
+// OrderRecord captures the fields needed to reverse an order's previous
+// contribution when an update or delete event arrives.
+// Stored in Redis as a Hash field (key = order ID).
+type OrderRecord struct {
+	ID          string    `json:"id"`
+	Status      string    `json:"status"`
+	TotalAmount float64   `json:"totalAmount"`
+	CreatedAt   time.Time `json:"createdAt"`
 }

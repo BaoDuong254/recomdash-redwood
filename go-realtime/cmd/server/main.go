@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/recomdash/go-realtime/internal/bootstrap"
 	"github.com/recomdash/go-realtime/internal/config"
 	"github.com/recomdash/go-realtime/internal/events"
 	"github.com/recomdash/go-realtime/internal/handlers"
@@ -59,8 +60,8 @@ func main() {
 	// -------------------------------------------------------------------------
 	// Repository, processor, handler wiring
 	// -------------------------------------------------------------------------
-	metricsRepo := repository.NewMetricsRepo(rdb)
-	metricsProc := processors.NewMetricsProcessor(metricsRepo, hub)
+	dashboardRepo := repository.NewDashboardRepo(rdb)
+	metricsProc := processors.NewMetricsProcessor(dashboardRepo, hub)
 
 	orderHandler := handlers.NewOrderHandler(metricsProc)
 
@@ -73,6 +74,13 @@ func main() {
 	// Context for graceful shutdown
 	// -------------------------------------------------------------------------
 	ctx, cancel := context.WithCancel(context.Background())
+
+	// If Redis was empty on startup, bootstrap the projection from the DB via
+	// the Redwood API's dashboardBootstrap function.  StartBootstrap is a no-op
+	// when the processor is already ready (hydrated from Redis).  Uses the
+	// service context so the retry loop stops on shutdown.
+	bootClient := bootstrap.NewClient(cfg.BootstrapURL)
+	metricsProc.StartBootstrap(ctx, bootClient.FetchBaseline)
 
 	go func() {
 		sigCh := make(chan os.Signal, 1)
@@ -95,7 +103,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// WebSocket endpoint: ws://host:PORT/ws
-	mux.HandleFunc("/ws", websocket.ServeWS(hub))
+	mux.HandleFunc("/ws", websocket.ServeWS(hub, metricsProc))
 
 	// Health check: GET /health
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

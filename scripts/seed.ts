@@ -10,31 +10,31 @@ export default async () => {
       {
         email: 'admin@recomdash.dev',
         name: 'Admin',
-        password: process.env.REDWOOD_ENV_ACCOUNT_PASSWORD || 'Admin@1234',
+        password: process.env.SEED_ACCOUNT_PASSWORD || 'Admin@1234',
         role: 'ADMIN' as const,
       },
       {
         email: 'seller@recomdash.dev',
         name: 'Bob Seller',
-        password: process.env.REDWOOD_ENV_ACCOUNT_PASSWORD || 'Seller@1234',
+        password: process.env.SEED_ACCOUNT_PASSWORD || 'Seller@1234',
         role: 'SELLER' as const,
       },
       {
         email: 'jane@example.com',
         name: 'Jane Doe',
-        password: process.env.REDWOOD_ENV_ACCOUNT_PASSWORD || 'User@1234',
+        password: process.env.SEED_ACCOUNT_PASSWORD || 'User@1234',
         role: 'USER' as const,
       },
       {
         email: 'john@example.com',
         name: 'John Smith',
-        password: process.env.REDWOOD_ENV_ACCOUNT_PASSWORD || 'User@1234',
+        password: process.env.SEED_ACCOUNT_PASSWORD || 'User@1234',
         role: 'USER' as const,
       },
       {
         email: 'emily@example.com',
         name: 'Emily Chen',
-        password: process.env.REDWOOD_ENV_ACCOUNT_PASSWORD || 'User@1234',
+        password: process.env.SEED_ACCOUNT_PASSWORD || 'User@1234',
         role: 'USER' as const,
       },
     ]

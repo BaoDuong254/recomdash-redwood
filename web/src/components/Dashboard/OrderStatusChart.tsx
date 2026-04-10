@@ -18,6 +18,9 @@ export interface OrderStatusItem {
 export interface OrderStatusChartProps {
   data: OrderStatusItem[]
   totalOrders: number
+  /** Label shown below the center count — should reflect the active time range
+   *  (e.g. "Today", "Last 7 days") so users know the count is range-scoped. */
+  rangeLabel?: string
 }
 
 interface TooltipPayloadItem {
@@ -43,7 +46,11 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
   )
 }
 
-const OrderStatusChart = ({ data, totalOrders }: OrderStatusChartProps) => {
+const OrderStatusChart = ({
+  data,
+  totalOrders,
+  rangeLabel,
+}: OrderStatusChartProps) => {
   return (
     <Card>
       <CardHeader className="tw-pb-2">
@@ -77,12 +84,12 @@ const OrderStatusChart = ({ data, totalOrders }: OrderStatusChartProps) => {
             </PieChart>
           </ResponsiveContainer>
 
-          <div className="tw-pointer-events-none tw-absolute tw-flex tw-flex-col tw-items-center tw-justify-center">
+          <div className="tw-pointer-events-none tw-absolute tw-flex tw-flex-col tw-items-center tw-justify-center tw-text-center">
             <span className="tw-text-2xl tw-font-bold tw-text-foreground">
               {totalOrders.toLocaleString()}
             </span>
-            <span className="tw-text-xs tw-text-muted-foreground">
-              Total Orders
+            <span className="tw-max-w-[80px] tw-text-xs tw-leading-tight tw-text-muted-foreground">
+              {rangeLabel ?? 'Orders'}
             </span>
           </div>
         </div>

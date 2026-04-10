@@ -106,8 +106,16 @@ func (c *Client) writePump() {
 	}
 }
 
+// SnapshotProvider supplies the pre-serialised dashboard.snapshot message that
+// is sent to every new client immediately after it connects.
+type SnapshotProvider interface {
+	CurrentSnapshotJSON() []byte
+}
+
 // ServeWS handles the HTTP upgrade for incoming WebSocket connections.
-func ServeWS(hub *Hub) http.HandlerFunc {
+// snap is called once per connection to deliver the current dashboard state
+// before any broadcast messages can be missed.
+func ServeWS(hub *Hub, snap SnapshotProvider) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		conn, err := upgrader.Upgrade(w, r, nil)
 		if err != nil {
@@ -123,6 +131,12 @@ func ServeWS(hub *Hub) http.HandlerFunc {
 		}
 
 		hub.register <- client
+
+		// Send the current snapshot immediately so the client has data before
+		// the first dashboard.updated broadcast arrives.
+		if data := snap.CurrentSnapshotJSON(); len(data) > 0 {
+			client.send <- data
+		}
 
 		go client.writePump()
 		go client.readPump()

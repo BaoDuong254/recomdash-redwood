@@ -1,14 +1,15 @@
 /**
  * useRealtimeDashboard
  *
- * Connects to the Go service WebSocket and exposes the latest metrics snapshot
- * plus a stream of recent order events.
+ * Connects to the Go service WebSocket and exposes the full live dashboard
+ * projection (KPI metrics + chart datasets + order status counts).
+ *
+ * The Go service sends:
+ *   dashboard.snapshot — full state delivered once on connect
+ *   dashboard.updated  — full state after every processed order event
  *
  * Usage:
- *   const { metrics, latestOrder, connected } = useRealtimeDashboard()
- *
- * The hook is fully self-contained: components don't need to know whether data
- * arrives via GraphQL or WebSocket.
+ *   const { snapshot, connected } = useRealtimeDashboard()
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -34,7 +35,47 @@ export interface OrderBrief {
   createdAt: string
 }
 
+export interface SalesBucket {
+  label: string
+  revenue: number
+}
+
+export interface StatusCount {
+  label: string
+  value: number
+  color: string
+}
+
+export interface OrderStatusByRange {
+  today: StatusCount[]
+  '7d': StatusCount[]
+  '30d': StatusCount[]
+  '12m': StatusCount[]
+}
+
+export interface DashboardSnapshot {
+  metrics: MetricsSnapshot
+  weeklySales: SalesBucket[]
+  monthlySales: SalesBucket[]
+  yearlySales: SalesBucket[]
+  orderStatus: OrderStatusByRange
+  generatedAt: string
+  version: number
+  /**
+   * ready=false means the Go projection has NOT been hydrated from a reliable
+   * source yet (empty Redis on startup, bootstrap in progress).
+   * Consumers MUST ignore the data fields when ready=false and render from
+   * their own fallback source (e.g. GraphQL baseline).
+   */
+  ready: boolean
+  /** Which source completed the hydration: "redis" | "db-bootstrap" | "empty" */
+  bootstrapSource: string
+}
+
 type WSMessageType =
+  | 'dashboard.snapshot'
+  | 'dashboard.updated'
+  // Legacy types kept for forward-compat.
   | 'metrics.updated'
   | 'order.created'
   | 'order.updated'
@@ -55,15 +96,17 @@ const RECONNECT_DELAY_MS = 3_000
 const MAX_RECONNECT_DELAY_MS = 30_000
 
 interface RealtimeDashboardState {
+  /** Full live projection from Go. null until first message received. */
+  snapshot: DashboardSnapshot | null
+  /** Convenience alias: snapshot?.metrics (null until connected). */
   metrics: MetricsSnapshot | null
-  latestOrder: OrderBrief | null
   connected: boolean
 }
 
 export function useRealtimeDashboard(): RealtimeDashboardState {
   const [state, setState] = useState<RealtimeDashboardState>({
+    snapshot: null,
     metrics: null,
-    latestOrder: null,
     connected: false,
   })
 
@@ -73,7 +116,6 @@ export function useRealtimeDashboard(): RealtimeDashboardState {
 
   // Store setState in a ref so the WebSocket closure always calls the latest
   // version without needing to rebuild the socket on every render.
-  // setState from useState is stable, so this effect runs exactly once.
   const setStateRef = useRef(setState)
   useEffect(() => {
     setStateRef.current = setState
@@ -95,18 +137,14 @@ export function useRealtimeDashboard(): RealtimeDashboardState {
         const msg = JSON.parse(event.data) as WSMessage
 
         switch (msg.type) {
-          case 'metrics.updated':
+          case 'dashboard.snapshot':
+          case 'dashboard.updated': {
+            const snap = msg.payload as DashboardSnapshot
             setStateRef.current((prev) => ({
               ...prev,
-              metrics: msg.payload as MetricsSnapshot,
+              snapshot: snap,
+              metrics: snap.metrics,
             }))
-            break
-
-          case 'order.created':
-          case 'order.updated':
-          case 'order.deleted': {
-            const payload = msg.payload as OrderBrief
-            setStateRef.current((prev) => ({ ...prev, latestOrder: payload }))
             break
           }
 
@@ -121,7 +159,6 @@ export function useRealtimeDashboard(): RealtimeDashboardState {
     ws.onclose = () => {
       if (unmountedRef.current) return
       setStateRef.current((prev) => ({ ...prev, connected: false }))
-      // Exponential back-off reconnect.
       const delay = reconnectDelayRef.current
       reconnectDelayRef.current = Math.min(delay * 2, MAX_RECONNECT_DELAY_MS)
       setTimeout(connect, delay)

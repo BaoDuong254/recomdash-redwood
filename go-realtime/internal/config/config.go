@@ -10,9 +10,10 @@ import (
 
 // Config holds all runtime configuration for the Go service.
 type Config struct {
-	Port  string
-	Redis RedisConfig
-	Env   string
+	Port         string
+	Redis        RedisConfig
+	Env          string
+	BootstrapURL string // base URL of the Redwood API for DB bootstrap (e.g. http://localhost:8911)
 }
 
 // RedisConfig holds Redis connection parameters.
@@ -43,8 +44,9 @@ func Load() (*Config, error) {
 	}
 
 	return &Config{
-		Port: getEnv("PORT", "8080"),
-		Env:  getEnv("APP_ENV", "development"),
+		Port:         getEnv("PORT", "8080"),
+		Env:          getEnv("APP_ENV", "development"),
+		BootstrapURL: getEnv("BOOTSTRAP_API_URL", "http://localhost:8911"),
 		Redis: RedisConfig{
 			Addr:     redisAddr,
 			Username: getEnv("REDIS_USERNAME", "default"),
