@@ -97,9 +97,9 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       REDIS_DB: ${REDIS_DB:-0}
       # Points at the internal redwood-api container.
-      # Path includes /.redwood/functions so that
-      # baseURL + "/dashboardBootstrap" resolves correctly.
-      BOOTSTRAP_API_URL: 'http://redwood-api:8911/.redwood/functions'
+      # rw-server serves functions at root, so baseURL + "/dashboardBootstrap"
+      # resolves to http://redwood-api:8911/dashboardBootstrap correctly.
+      BOOTSTRAP_API_URL: 'http://redwood-api:8911'
       ENV: production
     depends_on:
       redwood-api:
