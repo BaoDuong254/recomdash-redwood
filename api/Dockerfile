@@ -27,6 +27,9 @@ RUN yarn rw build api
 # ─── Runtime stage ────────────────────────────────────────────────────────────
 FROM node:20-alpine
 
+# Prisma schema engine requires OpenSSL at runtime (not present by default on Alpine)
+RUN apk add --no-cache openssl
+
 RUN corepack enable
 
 WORKDIR /app
