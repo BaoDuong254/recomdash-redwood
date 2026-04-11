@@ -61,6 +61,9 @@ services:
       CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
       CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # Set to 'false' when serving over plain HTTP (no TLS).
+      # Must be 'true' (default) when behind HTTPS.
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
       NODE_ENV: production
     restart: unless-stopped
     networks:
