@@ -44,13 +44,13 @@ COPY --from=builder /app/api/dist/ api/dist/
 COPY --from=builder /app/api/db/ api/db/
 COPY --from=builder /app/node_modules/.prisma/ node_modules/.prisma/
 COPY --from=builder /app/node_modules/@prisma/ node_modules/@prisma/
-# Copy prisma CLI (+ sibling WASM files it loads at runtime) so we can run
-# migrations without devDependencies present in the runtime stage
+# Copy prisma CLI so we can run migrations without devDependencies.
+# Invoke via build/index.js directly (not .bin/prisma) so __dirname resolves
+# to node_modules/prisma/build/ where the companion WASM files live.
 COPY --from=builder /app/node_modules/prisma/ node_modules/prisma/
-COPY --from=builder /app/node_modules/.bin/prisma* node_modules/.bin/
 COPY redwood.toml ./
 
 EXPOSE 8911
 
 # Run DB migrations then start the API server
-CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema api/db/schema.prisma && node api/dist/server.js"]
+CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --schema api/db/schema.prisma && node api/dist/server.js"]
