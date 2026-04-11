@@ -44,9 +44,12 @@ COPY --from=builder /app/api/dist/ api/dist/
 COPY --from=builder /app/api/db/ api/db/
 COPY --from=builder /app/node_modules/.prisma/ node_modules/.prisma/
 COPY --from=builder /app/node_modules/@prisma/ node_modules/@prisma/
+# Copy prisma CLI so we can run migrations without devDependencies
+COPY --from=builder /app/node_modules/prisma/ node_modules/prisma/
+COPY --from=builder /app/node_modules/.bin/prisma node_modules/.bin/prisma
 COPY redwood.toml ./
 
 EXPOSE 8911
 
 # Run DB migrations then start the API server
-CMD ["sh", "-c", "yarn rw prisma migrate deploy && node api/dist/server.js"]
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy --schema api/db/schema.prisma && node api/dist/server.js"]
