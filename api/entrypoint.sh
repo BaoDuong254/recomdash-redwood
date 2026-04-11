@@ -29,4 +29,4 @@ else
 fi
 
 echo "Starting API server..."
-exec node api/dist/server.js
+exec node_modules/.bin/rw-server api

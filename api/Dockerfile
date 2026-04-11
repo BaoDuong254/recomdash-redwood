@@ -51,8 +51,10 @@ COPY --from=builder /app/node_modules/@prisma/ node_modules/@prisma/
 # Invoke via build/index.js directly (not .bin/prisma) so __dirname resolves
 # to node_modules/prisma/build/ where the companion WASM files live.
 COPY --from=builder /app/node_modules/prisma/ node_modules/prisma/
-COPY redwood.toml ./
+COPY redwood.toml graphql.config.js ./
 COPY api/entrypoint.sh entrypoint.sh
+
+ENV NODE_ENV=production
 RUN chmod +x entrypoint.sh
 
 EXPOSE 8911
