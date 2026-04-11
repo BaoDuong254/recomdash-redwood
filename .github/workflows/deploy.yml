@@ -93,14 +93,15 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          envs: TAG
+          envs: TAG,DOCKERHUB_USERNAME
           script: |
             set -e
             cd /opt/recomdash
 
             # Pull latest images
             TAG="${{ steps.tag.outputs.TAG }}"
-            export TAG
+            DOCKERHUB_USERNAME="${{ secrets.DOCKERHUB_USERNAME }}"
+            export TAG DOCKERHUB_USERNAME
 
             docker compose -f docker-compose.prod.yml pull
 

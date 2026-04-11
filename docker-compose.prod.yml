@@ -1,5 +1,3 @@
-version: '3.9'
-
 # Production compose file — no secrets baked in.
 # All sensitive values come from the environment or a secrets manager.
 # Usage:
@@ -11,7 +9,7 @@ services:
     build:
       context: ./nginx
       dockerfile: Dockerfile
-    image: recomdash-nginx:${TAG:-latest}
+    image: ${DOCKERHUB_USERNAME}/recomdash-nginx:${TAG:-latest}
     ports:
       - '80:80'
     depends_on:
@@ -34,7 +32,7 @@ services:
       args:
         REDWOOD_ENV_GO_SERVICE_URL: ''
         REDWOOD_ENV_GO_SERVICE_WS_URL: ''
-    image: recomdash-web:${TAG:-latest}
+    image: ${DOCKERHUB_USERNAME}/recomdash-web:${TAG:-latest}
     expose:
       - '3000'
     restart: unless-stopped
@@ -52,7 +50,7 @@ services:
     build:
       context: .
       dockerfile: api/Dockerfile
-    image: recomdash-api:${TAG:-latest}
+    image: ${DOCKERHUB_USERNAME}/recomdash-api:${TAG:-latest}
     expose:
       - '8911'
     environment:
@@ -79,7 +77,7 @@ services:
     build:
       context: ./go-realtime
       dockerfile: Dockerfile
-    image: recomdash-go-realtime:${TAG:-latest}
+    image: ${DOCKERHUB_USERNAME}/recomdash-go-realtime:${TAG:-latest}
     expose:
       - '8080'
     environment:
