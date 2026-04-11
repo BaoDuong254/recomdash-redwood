@@ -12,6 +12,7 @@ services:
     image: ${DOCKERHUB_USERNAME}/recomdash-nginx:${TAG:-latest}
     ports:
       - '80:80'
+      - '443:443'
     depends_on:
       redwood-web:
         condition: service_healthy
