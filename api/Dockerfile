@@ -52,8 +52,9 @@ COPY --from=builder /app/node_modules/@prisma/ node_modules/@prisma/
 # to node_modules/prisma/build/ where the companion WASM files live.
 COPY --from=builder /app/node_modules/prisma/ node_modules/prisma/
 COPY redwood.toml ./
+COPY api/entrypoint.sh entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8911
 
-# Run DB migrations then start the API server
-CMD ["sh", "-c", "node node_modules/prisma/build/index.js migrate deploy --schema api/db/schema.prisma && node api/dist/server.js"]
+ENTRYPOINT ["sh", "entrypoint.sh"]
