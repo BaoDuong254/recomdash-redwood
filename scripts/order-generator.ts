@@ -45,6 +45,13 @@ const API_BASE = process.env.GENERATOR_API_URL ?? 'http://localhost:8911'
 const GRAPHQL_URL = `${API_BASE}/graphql`
 const AUTH_URL = `${API_BASE}/auth`
 
+// Self-signed certs (EC2 public DNS without a CA-issued cert) are rejected by
+// Node's TLS stack. Disable verification so the generator can reach staging
+// deployments. This script is never used in production paths.
+if (API_BASE.startsWith('https://')) {
+  process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+}
+
 const LOGIN_EMAIL = process.env.GENERATOR_EMAIL ?? 'emily@example.com'
 const LOGIN_PASSWORD = process.env.GENERATOR_PASSWORD ?? 'password'
 
