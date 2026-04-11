@@ -33,6 +33,9 @@ RUN yarn rw build web
 # ─── Runtime stage ────────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine
 
+# wget is not included in nginx:alpine by default; needed for the healthcheck
+RUN apk add --no-cache wget
+
 # Copy built SPA
 COPY --from=builder /app/web/dist/ /usr/share/nginx/html/
 
