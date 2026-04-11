@@ -44,9 +44,10 @@ COPY --from=builder /app/api/dist/ api/dist/
 COPY --from=builder /app/api/db/ api/db/
 COPY --from=builder /app/node_modules/.prisma/ node_modules/.prisma/
 COPY --from=builder /app/node_modules/@prisma/ node_modules/@prisma/
-# Copy prisma CLI so we can run migrations without devDependencies
+# Copy prisma CLI (+ sibling WASM files it loads at runtime) so we can run
+# migrations without devDependencies present in the runtime stage
 COPY --from=builder /app/node_modules/prisma/ node_modules/prisma/
-COPY --from=builder /app/node_modules/.bin/prisma node_modules/.bin/prisma
+COPY --from=builder /app/node_modules/.bin/prisma* node_modules/.bin/
 COPY redwood.toml ./
 
 EXPOSE 8911
