@@ -21840,6 +21840,23 @@ __metadata:
   languageName: node
   linkType: hard
 
+"recomdash@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "recomdash@workspace:."
+  dependencies:
+    "@commitlint/cli": "npm:20.4.3"
+    "@commitlint/config-conventional": "npm:20.4.3"
+    "@redwoodjs/auth-dbauth-setup": "npm:8.9.0"
+    "@redwoodjs/cli-storybook-vite": "npm:8.9.0"
+    "@redwoodjs/core": "npm:8.9.0"
+    "@redwoodjs/project-config": "npm:8.9.0"
+    lefthook: "npm:2.1.2"
+    prettier-plugin-tailwindcss: "npm:^0.5.12"
+    tsx: "npm:^4.15.7"
+    zod: "npm:4.0.17"
+  languageName: unknown
+  linkType: soft
+
 "redent@npm:^3.0.0":
   version: 3.0.0
   resolution: "redent@npm:3.0.0"
@@ -22407,23 +22424,6 @@ __metadata:
   checksum: 10c0/faf1697b305d13a149bb64a2bb7378344becc7c8580f56225c4c00adbf493d82480a44b3e3b1cc82a3ac5d1d4cab6dfc89e6635443895a2dc488969075f5b94d
   languageName: node
   linkType: hard
-
-"root-workspace-0b6124@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "root-workspace-0b6124@workspace:."
-  dependencies:
-    "@commitlint/cli": "npm:20.4.3"
-    "@commitlint/config-conventional": "npm:20.4.3"
-    "@redwoodjs/auth-dbauth-setup": "npm:8.9.0"
-    "@redwoodjs/cli-storybook-vite": "npm:8.9.0"
-    "@redwoodjs/core": "npm:8.9.0"
-    "@redwoodjs/project-config": "npm:8.9.0"
-    lefthook: "npm:2.1.2"
-    prettier-plugin-tailwindcss: "npm:^0.5.12"
-    tsx: "npm:^4.15.7"
-    zod: "npm:4.0.17"
-  languageName: unknown
-  linkType: soft
 
 "run-async@npm:^2.4.0":
   version: 2.4.1
